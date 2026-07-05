@@ -15,10 +15,8 @@ class ConvergenceResult:
 def run_convergence_study(resolutions, tau, u_max):
     for  r in resolutions:
         ltc = Lattice(nx=8, ny=r, tau_lbm=tau, u_max=u_max)
-        ltc.nu = (ltc.tau_lbm - 0.5) / 3.0
-        ltc.g_x = 8 * ltc.nu * ltc.u_max / (ltc.H_eff)**2
 
-        ltc.run(100000)
+        ltc.run(300000)
 
         u_numerical = ltc.ux[ltc.nx//2, 1:-1]
         u_analytical = analytical.poiseuille_profile(ltc.ny, ltc.g_x, ltc.nu)
