@@ -2,13 +2,13 @@ import numpy as np
 
 class Lattice:
     def __init__(self):
-        self.nx                  = 300
-        self.ny                  = 100
+        self.nx                  = 32
+        self.ny                  = 32
+        self.it                  = 0
         self.tau_lbm             = 1.0
         self.nu                  = (self.tau_lbm - 0.5) / 3.0
         self.u_max               = 0.4
         self.g_x                 = 8 * self.nu * self.u_max / self.ny**2
-        self.Nt                  = int(5 * self.ny**2 / self.nu) + 2000
         self.c                   = np.array([[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1],
                                              [1, 1], [-1, 1], [-1, -1], [1, -1]])
         self.w                   = np.array([4/9, 1/9, 1/9, 1/9, 1/9, 1/36, 1/36, 1/36, 1/36])
@@ -46,5 +46,22 @@ class Lattice:
     def stream(self):
         for i in range(9):
             self.f[i] = np.roll(self.f[i], shift=(self.c[i, 0], self.c[i, 1]), axis=(0, 1))
+
+    def run(self, n_steps):
+        old_ux = np.zeros((self.nx, self.ny))
+
+        for step in range(n_steps):
+            self.macro()
+            self.equilibrium()
+            self.collision()
+            self.bounce_back_obstacle()
+            self.stream()
+
+            change = np.max(np.abs(self.ux - old_ux))
+            old_ux = self.ux.copy()
+            if change < 1e-8:
+                self.it = step
+                break
+
 
     
