@@ -1,11 +1,12 @@
 import numpy as np
 
 class Lattice:
-    def __init__(self):
-        self.nx                  = 32
-        self.ny                  = 32
+    def __init__(self, nx, ny, tau_lbm, u_max):
+        self.nx                  = nx
+        self.ny                  = ny
+        self.H_eff               = ny - 2
         self.it                  = 0
-        self.tau_lbm             = 1.0
+        self.tau_lbm             = tau_lbm
         self.nu                  = (self.tau_lbm - 0.5) / 3.0
         self.u_max               = 0.4
         self.g_x                 = 8 * self.nu * self.u_max / self.ny**2
@@ -13,16 +14,15 @@ class Lattice:
                                              [1, 1], [-1, 1], [-1, -1], [1, -1]])
         self.w                   = np.array([4/9, 1/9, 1/9, 1/9, 1/9, 1/36, 1/36, 1/36, 1/36])
         self.opposite            = [0, 3, 4, 1, 2, 7, 8, 5, 6]
-        self.grid                = np.zeros((self.nx, self.ny))
-        self.obstacle            = np.zeros((self.nx, self.ny)).astype(bool)
+        self.obstacle            = np.zeros((nx, ny)).astype(bool)
         self.obstacle[:, 0]      = True   # The entire bottom edge is a wall
         self.obstacle[:, -1]     = True  # The entire top edge is a wall
-        self.f                   = self.w[:, np.newaxis, np.newaxis] * np.ones((9, self.nx, self.ny))
-        self.f_eq                = np.zeros((9, self.nx, self.ny))
-        self.rho                 = np.ones((self.nx, self.ny))
-        self.ux                  = np.zeros((self.nx, self.ny))
-        self.uy                  = np.zeros((self.nx, self.ny))
-        self.cu                  = np.zeros((9, self.nx, self.ny))
+        self.f                   = self.w[:, np.newaxis, np.newaxis] * np.ones((9, nx, ny))
+        self.f_eq                = np.zeros((9, nx, ny))
+        self.rho                 = np.ones((nx, ny))
+        self.ux                  = np.zeros((nx, ny))
+        self.uy                  = np.zeros((nx, ny))
+        self.cu                  = np.zeros((9, nx, ny))
 
     def macro(self):
         self.rho = np.sum(self.f, axis=0)
