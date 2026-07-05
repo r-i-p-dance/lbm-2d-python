@@ -1,6 +1,6 @@
 import numpy as np
 
-class lattice:
+class Lattice:
     def __init__(self):
         self.nx                  = 300
         self.ny                  = 100

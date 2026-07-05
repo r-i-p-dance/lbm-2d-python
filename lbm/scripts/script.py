@@ -2,12 +2,6 @@ import numpy as np
 import os
 import sys
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-root_dir = os.path.abspath(os.path.join(current_dir, '..', '..'))
-
-# Add it to sys.path so Python can find 'lbm'
-sys.path.insert(0, root_dir)
-
 import matplotlib.pyplot as plt
 from matplotlib.animation import PillowWriter
 
@@ -35,7 +29,7 @@ for step in range(ltc.Nt):
 
     if step % 50 == 0:
         vel_mag = np.sqrt(ltc.ux**2 + ltc.uy**2)
-        vel_mag[ltc.obstacle] = 0.0 
+        vel_mag[ltc.obstacle] = 0.0
         img.set_data(vel_mag.T)
         title.set_text(f"Time Step: {step}")
         plt.pause(0.01)
