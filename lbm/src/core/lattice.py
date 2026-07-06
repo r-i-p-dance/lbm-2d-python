@@ -8,8 +8,8 @@ class Lattice:
         self.it                  = 0
         self.tau_lbm             = tau_lbm
         self.nu                  = (self.tau_lbm - 0.5) / 3.0
-        self.u_max               = 0.4
-        self.g_x                 = 8 * self.nu * self.u_max / self.ny**2
+        self.u_max               = 0.04
+        self.g_x                 = 8 * self.nu * self.u_max / self.H_eff**2
         self.c                   = np.array([[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1],
                                              [1, 1], [-1, 1], [-1, -1], [1, -1]])
         self.w                   = np.array([4/9, 1/9, 1/9, 1/9, 1/9, 1/36, 1/36, 1/36, 1/36])
@@ -47,21 +47,30 @@ class Lattice:
         for i in range(9):
             self.f[i] = np.roll(self.f[i], shift=(self.c[i, 0], self.c[i, 1]), axis=(0, 1))
 
+    def step(self):
+        self.macro()
+        self.equilibrium()
+        self.collision()
+        self.bounce_back_obstacle()
+        self.stream()
+
     def run(self, n_steps):
-        old_ux = np.zeros((self.nx, self.ny))
+        """Advance exactly n_steps time steps."""
+        for _ in range(n_steps):
+            self.step()
 
-        for step in range(n_steps):
-            self.macro()
-            self.equilibrium()
-            self.collision()
-            self.bounce_back_obstacle()
-            self.stream()
-
-            change = np.max(np.abs(self.ux - old_ux))
-            old_ux = self.ux.copy()
-            if change < 1e-8:
-                self.it = step
-                break
+    def converge(self, tol=1e-8, check_every=500, max_steps=10_000_000):
+        """Run until velocity stops changing. Returns the number of steps taken."""
+        old_ux = self.ux.copy()
+        for step in range(1, max_steps + 1):
+            self.step()
+            if step % check_every == 0:
+                change = np.max(np.abs(self.ux - old_ux))
+                old_ux = self.ux.copy()
+                if change < tol:
+                    self.it = step
+                    return step
+        raise RuntimeError(f"No convergence after {max_steps} steps (last change: {change:.3e})")
 
 
     
