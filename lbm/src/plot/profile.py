@@ -18,8 +18,8 @@ def plot_profile_comparison(u_numerical, u_analytical, Ny, save_path):
     # =========================================================================
     # Subplot 1: Velocity Profiles
     # =========================================================================
-    ax1.plot(y, u_numerical, 'o-', label='LBM', ms=3, linewidth = 2)
-    ax1.plot(y, u_analytical, '-', label='Analytical', linewidth = 2)
+    ax1.plot(y, u_analytical, '-', label='Analytical', color='tab:orange', linewidth = 2)
+    ax1.plot(y, u_numerical, 'o', label='LBM', color='tab:blue', ms=3)
     
     ax1.set_xlabel('y', fontsize=14)
     ax1.set_ylabel('Velocity', fontsize=14)
