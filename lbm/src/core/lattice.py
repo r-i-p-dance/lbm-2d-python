@@ -1,14 +1,14 @@
 import numpy as np
 
 class Lattice:
-    def __init__(self, nx, ny, tau_lbm, u_max):
+    def __init__(self, nx=8, ny=16, tau_lbm=0.933, u_max=0.04):
         self.nx                  = nx
         self.ny                  = ny
         self.H_eff               = ny - 2
         self.it                  = 0
         self.tau_lbm             = tau_lbm
         self.nu                  = (self.tau_lbm - 0.5) / 3.0
-        self.u_max               = 0.04
+        self.u_max               = u_max
         self.g_x                 = 8 * self.nu * self.u_max / self.H_eff**2
         self.c                   = np.array([[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1],
                                              [1, 1], [-1, 1], [-1, -1], [1, -1]])
@@ -26,8 +26,13 @@ class Lattice:
 
     def macro(self):
         self.rho = np.sum(self.f, axis=0)
-        self.ux = (np.sum(self.f * self.c[:, 0, np.newaxis, np.newaxis], axis=0) + self.g_x/2) / self.rho
-        self.uy = np.sum(self.f * self.c[:, 1, np.newaxis, np.newaxis], axis=0) / self.rho
+
+        # force correction only in fluid
+        momentum_x = np.sum(self.f * self.c[:, 0, None, None], axis=0)
+        momentum_x[~self.obstacle] += self.g_x / 2       
+        self.ux = momentum_x / self.rho
+        
+        self.uy = np.sum(self.f * self.c[:, 1, None, None], axis=0) / self.rho
 
     def equilibrium(self):
         self.cu = self.c[:, 0, np.newaxis, np.newaxis] * self.ux + self.c[:, 1, np.newaxis, np.newaxis] * self.uy
@@ -36,9 +41,16 @@ class Lattice:
 
     def collision(self):
         self.cu = self.c[:, 0, np.newaxis, np.newaxis] * self.ux + self.c[:, 1, np.newaxis, np.newaxis] * self.uy
-        F = self.w[:, np.newaxis,  np.newaxis] * (3*(self.c[:, 0, np.newaxis, np.newaxis] - self.ux) + 9*self.cu * self.c[:, 0, np.newaxis, np.newaxis]) * self.g_x
 
-        self.f = self.f - (1.0/self.tau_lbm)*(self.f - self.f_eq) + (1 - 1/(2*self.tau_lbm)) * F
+        F = self.w[:, None, None] * (3*(self.c[:, 0, None, None] - self.ux) + 9*self.cu * self.c[:, 0, None, None]) * self.g_x
+        
+        # Collide only in the fluid; leave obstacle nodes untouched here
+        fluid = ~self.obstacle
+        self.f[:, fluid] = (
+            self.f[:, fluid]
+            - (1.0/self.tau_lbm) * (self.f[:, fluid] - self.f_eq[:, fluid])
+            + (1 - 1/(2*self.tau_lbm)) * F[:, fluid]
+        )
 
     def bounce_back_obstacle(self):
         self.f[:, self.obstacle] = self.f[self.opposite][:, self.obstacle]
