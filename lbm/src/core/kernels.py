@@ -17,3 +17,16 @@ def collide_kernel(f, f_eq, ux, uy, w, cx, cy, tau, g_x, obstacle):
                 cuk = cx[k] * uxij + cy[k] * uyij
                 Fk = w[k] * (3.0 * (cx[k] - uxij) + 9.0 * cuk * cx[k]) * g_x
                 f[k, i, j] = f[k, i, j] - inv_tau * (f[k, i, j] - f_eq[k, i, j]) + force_prefactor * Fk
+
+@njit(cache=True)
+def equilibrium_kernel(f_eq, ux, uy, rho, w, cx, cy):
+    nx, ny = ux.shape
+    for i in range(nx):
+        for j in range(ny):
+            uxij = ux[i, j]
+            uyij = uy[i, j]
+            usq = uxij * uxij + uyij * uyij
+            rhoij = rho[i, j]
+            for k in range(9):
+                cuk = cx[k] * uxij + cy[k] * uyij
+                f_eq[k, i, j] = w[k] * rhoij * (1.0 + 3.0 * cuk + 4.5 * cuk * cuk - 1.5 * usq)

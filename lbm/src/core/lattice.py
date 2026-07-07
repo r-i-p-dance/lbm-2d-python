@@ -1,5 +1,5 @@
 import numpy as np
-from lbm.src.core.kernels import collide_kernel
+from lbm.src.core.kernels import *
 
 class Lattice:
     def __init__(self, nx=8, ny=16, tau_lbm=0.933, u_max=0.04):
@@ -39,9 +39,7 @@ class Lattice:
         self.uy = np.sum(self.f * self.c[:, 1, None, None], axis=0) / self.rho
 
     def equilibrium(self):
-        self.cu = self.c[:, 0, np.newaxis, np.newaxis] * self.ux + self.c[:, 1, np.newaxis, np.newaxis] * self.uy
-        u_sq = self.ux**2 + self.uy**2
-        self.f_eq = self.w[:, np.newaxis, np.newaxis] * self.rho * (1 + 3*self.cu + 4.5*self.cu**2 - 1.5*u_sq)
+        equilibrium_kernel(self.f_eq, self.ux, self.uy, self.rho, self.w, self.cx, self.cy)
 
     def collision(self):
         collide_kernel(self.f, self.f_eq, self.ux, self.uy,
