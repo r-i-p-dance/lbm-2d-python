@@ -30,3 +30,22 @@ def equilibrium_kernel(f_eq, ux, uy, rho, w, cx, cy):
             for k in range(9):
                 cuk = cx[k] * uxij + cy[k] * uyij
                 f_eq[k, i, j] = w[k] * rhoij * (1.0 + 3.0 * cuk + 4.5 * cuk * cuk - 1.5 * usq)
+
+@njit(cache=True)
+def macro_kernel(f, ux, uy, rho, cx, cy, g_x, obstacle):
+    nx, ny = ux.shape
+    for i in range(nx):
+        for j in range(ny):
+            r = 0.0
+            mx = 0.0
+            my = 0.0
+            for k in range(9):
+                fk = f[k, i, j]
+                r += fk
+                mx += fk * cx[k]
+                my += fk * cy[k]
+            rho[i, j] = r
+            if not obstacle[i, j]:
+                mx += 0.5 * g_x   # half-force correction in fluid only
+            ux[i, j] = mx / r
+            uy[i, j] = my / r

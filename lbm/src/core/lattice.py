@@ -29,14 +29,7 @@ class Lattice:
         self.cu                  = np.zeros((9, nx, ny))
 
     def macro(self):
-        self.rho = np.sum(self.f, axis=0)
-
-        # force correction only in fluid
-        momentum_x = np.sum(self.f * self.c[:, 0, None, None], axis=0)
-        momentum_x[~self.obstacle] += self.g_x / 2       
-        self.ux = momentum_x / self.rho
-        
-        self.uy = np.sum(self.f * self.c[:, 1, None, None], axis=0) / self.rho
+        macro_kernel(self.f, self.ux, self.uy, self.rho, self.cx, self.cy, self.g_x, self.obstacle)
 
     def equilibrium(self):
         equilibrium_kernel(self.f_eq, self.ux, self.uy, self.rho, self.w, self.cx, self.cy)
