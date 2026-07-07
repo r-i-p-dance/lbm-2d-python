@@ -61,3 +61,16 @@ def stream_kernel(f, f_new, cx, cy):
             for j in range(ny):
                 j_src = (j - dy) % ny
                 f_new[k, i, j] = f[k, i_src, j_src]
+
+@njit(cache=True)
+def bounce_back_kernel(f, opposite, obstacle):
+    nx, ny = f.shape[1], f.shape[2]
+    temp = np.empty(9)
+    for i in range(nx):
+        for j in range(ny):
+            if not obstacle[i, j]:
+                continue
+            for k in range(9):
+                temp[k] = f[k, i, j]
+            for k in range(9):
+                f[k, i, j] = temp[opposite[k]]

@@ -41,7 +41,7 @@ class Lattice:
                    self.tau_lbm, self.g_x, self.obstacle)
 
     def bounce_back_obstacle(self):
-        self.f[:, self.obstacle] = self.f[self.opposite][:, self.obstacle]
+        bounce_back_kernel(self.f, self.opposite, self.obstacle)
 
     def stream(self):
         stream_kernel(self.f, self.f_new, self.cx, self.cy)
