@@ -22,6 +22,7 @@ class Lattice:
         self.obstacle[:, 0]      = True   # The entire bottom edge is a wall
         self.obstacle[:, -1]     = True  # The entire top edge is a wall
         self.f                   = self.w[:, np.newaxis, np.newaxis] * np.ones((9, nx, ny))
+        self.f_new               = np.zeros((9, nx, ny))
         self.f_eq                = np.zeros((9, nx, ny))
         self.rho                 = np.ones((nx, ny))
         self.ux                  = np.zeros((nx, ny))
@@ -43,8 +44,8 @@ class Lattice:
         self.f[:, self.obstacle] = self.f[self.opposite][:, self.obstacle]
 
     def stream(self):
-        for i in range(9):
-            self.f[i] = np.roll(self.f[i], shift=(self.c[i, 0], self.c[i, 1]), axis=(0, 1))
+        stream_kernel(self.f, self.f_new, self.cx, self.cy)
+        self.f, self.f_new = self.f_new, self.f
 
     def step(self):
         self.macro()

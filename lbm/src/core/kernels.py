@@ -49,3 +49,15 @@ def macro_kernel(f, ux, uy, rho, cx, cy, g_x, obstacle):
                 mx += 0.5 * g_x   # half-force correction in fluid only
             ux[i, j] = mx / r
             uy[i, j] = my / r
+
+@njit(cache=True)
+def stream_kernel(f, f_new, cx, cy):
+    nx, ny = f.shape[1], f.shape[2]
+    for k in range(9):
+        dx = cx[k]
+        dy = cy[k]
+        for i in range(nx):
+            i_src = (i - dx) % nx
+            for j in range(ny):
+                j_src = (j - dy) % ny
+                f_new[k, i, j] = f[k, i_src, j_src]
