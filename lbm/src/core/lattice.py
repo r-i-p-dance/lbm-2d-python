@@ -1,4 +1,5 @@
 import numpy as np
+from lbm.src.core.kernels import collide_kernel
 
 class Lattice:
     def __init__(self, nx=8, ny=16, tau_lbm=0.933, u_max=0.04):
@@ -12,6 +13,9 @@ class Lattice:
         self.g_x                 = 8 * self.nu * self.u_max / self.H_eff**2
         self.c                   = np.array([[0, 0], [1, 0], [0, 1], [-1, 0], [0, -1],
                                              [1, 1], [-1, 1], [-1, -1], [1, -1]])
+        self.cx                  = self.c[:, 0].astype(np.int64)
+        self.cy                  = self.c[:, 1].astype(np.int64)
+        self.cu                  = np.zeros((9, nx, ny))
         self.w                   = np.array([4/9, 1/9, 1/9, 1/9, 1/9, 1/36, 1/36, 1/36, 1/36])
         self.opposite            = [0, 3, 4, 1, 2, 7, 8, 5, 6]
         self.obstacle            = np.zeros((nx, ny)).astype(bool)
@@ -40,17 +44,9 @@ class Lattice:
         self.f_eq = self.w[:, np.newaxis, np.newaxis] * self.rho * (1 + 3*self.cu + 4.5*self.cu**2 - 1.5*u_sq)
 
     def collision(self):
-        self.cu = self.c[:, 0, np.newaxis, np.newaxis] * self.ux + self.c[:, 1, np.newaxis, np.newaxis] * self.uy
-
-        F = self.w[:, None, None] * (3*(self.c[:, 0, None, None] - self.ux) + 9*self.cu * self.c[:, 0, None, None]) * self.g_x
-        
-        # Collide only in the fluid; leave obstacle nodes untouched here
-        fluid = ~self.obstacle
-        self.f[:, fluid] = (
-            self.f[:, fluid]
-            - (1.0/self.tau_lbm) * (self.f[:, fluid] - self.f_eq[:, fluid])
-            + (1 - 1/(2*self.tau_lbm)) * F[:, fluid]
-        )
+        collide_kernel(self.f, self.f_eq, self.ux, self.uy,
+                   self.w, self.cx, self.cy,
+                   self.tau_lbm, self.g_x, self.obstacle)
 
     def bounce_back_obstacle(self):
         self.f[:, self.obstacle] = self.f[self.opposite][:, self.obstacle]
