@@ -2,7 +2,7 @@ import numpy as np
 from lbm.src.core.kernels import *
 
 class Lattice:
-    def __init__(self, nx=8, ny=16, tau_lbm=0.933, u_max=0.04):
+    def __init__(self, nx=4, ny=16, tau_lbm=0.8, u_max=0.04):
         self.nx                  = nx
         self.ny                  = ny
         self.H_eff               = ny - 2
@@ -59,7 +59,7 @@ class Lattice:
         for _ in range(n_steps):
             self.step()
 
-    def converge(self, tol=1e-8, check_every=500, max_steps=10_000_000):
+    def converge(self, tol=1e-8, check_every=500, max_steps=100_000_000):
         """Run until velocity stops changing. Returns the number of steps taken."""
         old_ux = self.ux.copy()
         for step in range(1, max_steps + 1):
