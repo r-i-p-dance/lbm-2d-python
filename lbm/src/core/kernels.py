@@ -48,6 +48,8 @@ def macro_kernel(f, ux, uy, rho, cx, cy, g_x, obstacle):
     nx, ny = ux.shape
     for i in range(nx):
         for j in range(ny):
+            if obstacle[i, j]:
+                continue
             r = 0.0
             mx = 0.0
             my = 0.0
@@ -57,8 +59,7 @@ def macro_kernel(f, ux, uy, rho, cx, cy, g_x, obstacle):
                 mx += fk * cx[k]
                 my += fk * cy[k]
             rho[i, j] = r
-            if not obstacle[i, j]:
-                mx += 0.5 * g_x   # half-force correction in fluid only
+            mx += 0.5 * g_x   # half-force correction in fluid only
             ux[i, j] = mx / r
             uy[i, j] = my / r
 
