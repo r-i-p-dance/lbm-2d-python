@@ -10,6 +10,9 @@ def plot_convergence(Ny_values, L2_errors, save_path):
     L2_errors (list): Corresponding L2 errors for each resolution.
     save_path (str): Path to save the plot image.
     """
+    if len(L2_errors) <= 1:
+        return 
+    
     plt.figure(figsize=(8, 6))
     plt.loglog(Ny_values, L2_errors, 'o', markersize=6)
     
