@@ -64,16 +64,23 @@ def macro_kernel(f, ux, uy, rho, cx, cy, g_x, obstacle):
             uy[i, j] = my / r
 
 @njit(cache=True)
-def stream_kernel(f, f_new, cx, cy):
+def stream_kernel(f, f_new, cx, cy, periodic_x):
     nx, ny = f.shape[1], f.shape[2]
     for k in range(9):
         dx = cx[k]
         dy = cy[k]
         for i in range(nx):
-            i_src = (i - dx) % nx
             for j in range(ny):
                 j_src = (j - dy) % ny
-                f_new[k, i, j] = f[k, i_src, j_src]
+                if periodic_x:
+                    i_src = (i - dx) % nx
+                    f_new[k, i, j] = f[k, i_src, j_src]
+                else:
+                    i_src = i - dx
+                    if 0 <= i_src < nx:
+                        f_new[k, i, j] = f[k, i_src, j_src]
+                    else:
+                        f_new[k, i, j] = f[k, i, j]
 
 @njit(cache=True)
 def bounce_back_kernel(f, opposite, obstacle):
