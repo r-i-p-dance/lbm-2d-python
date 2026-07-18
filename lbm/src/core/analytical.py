@@ -1,6 +1,6 @@
 import numpy as np
 
-def poiseuille_profile(Ny, g_x, nu):
+def poiseuille_from_force(Ny, g_x, nu):
     """
     Compute the analytical Poiseuille flow profile for a given number of grid points in the y-direction (Ny),
     body force in the x-direction (g_x), and kinematic viscosity (nu).
