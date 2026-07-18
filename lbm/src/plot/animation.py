@@ -31,3 +31,10 @@ class Recorder:
 
     def close(self):
         self.writer.finish()
+
+def record_development(case_class, nx, ny, tol, every=100, path=None, **case_kwargs):
+    ltc = case_class(nx=nx, ny=ny, **case_kwargs)
+    rec = Recorder(ltc, path=path, every=every)
+    ltc.converge(tol=tol, recorder=rec)
+    rec.close()
+
