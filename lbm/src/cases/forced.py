@@ -1,3 +1,4 @@
+from lbm.src.core.analytical import poiseuille_from_force
 from lbm.src.core.lattice import BaseLattice
 from lbm.src.core.kernels import macro_kernel, collide_kernel, forcing_kernel
 
@@ -17,3 +18,6 @@ class ForcedPoiseuille(BaseLattice):
 
     def apply_forcing(self):
         forcing_kernel(self.f, self.ux, self.uy, self.w, self.cx, self.cy, self.tau_lbm, self.g_x, self.obstacle)
+
+    def analytical_profile(self):
+        return poiseuille_from_force(self.ny, self.g_x, self.nu)
