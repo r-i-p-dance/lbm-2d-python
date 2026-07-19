@@ -94,3 +94,42 @@ def bounce_back_kernel(f, opposite, obstacle):
                 temp[k] = f[k, i, j]
             for k in range(9):
                 f[k, i, j] = temp[opposite[k]]
+
+@njit(cache=True)
+def zou_he_west_kernel(f, ux, uy, rho, rho_in):
+    _, ny = ux.shape
+    for j in range(1, ny - 1):
+        f0 = f[0, 0, j]
+        f2 = f[2, 0, j]
+        f3 = f[3, 0, j]
+        f4 = f[4, 0, j]
+        f6 = f[6, 0, j]
+        f7 = f[7, 0, j]
+
+        uy[0, j] = 0.0
+        ux[0, j] = 1 - ((f0 + f2 + f4 + 2 * (f3 + f6 + f7)) / rho_in)
+        rho[0, j] = rho_in
+
+        f[1, 0, j] = f3 + (2 / 3) * rho_in * ux[0, j]
+        f[5, 0, j] = f7 - 0.5 * (f2 - f4) + (1 / 6) * rho_in * ux[0, j]
+        f[8, 0, j] = f6 + 0.5 * (f2 - f4) + (1 / 6) * rho_in * ux[0, j]
+
+@njit(cache=True)
+def zou_he_east_kernel(f, ux, uy, rho, rho_out):
+    nx, ny = ux.shape
+    E = nx - 1
+    for j in range(1, ny - 1):
+        f0 = f[0, E, j]
+        f1 = f[1, E, j]
+        f2 = f[2, E, j]
+        f4 = f[4, E, j]
+        f5 = f[5, E, j]
+        f8 = f[8, E, j]
+
+        uy[E, j] = 0.0
+        ux[E, j] = -1.0 + (f0 + f2 + f4 + 2 * (f1 + f5 + f8)) / rho_out
+        rho[E, j] = rho_out
+
+        f[3, E, j] = f1 - (2 / 3) * rho_out * ux[E, j]
+        f[7, E, j] = f5 + 0.5 * (f2 - f4) - (1 / 6) * rho_out * ux[E, j]
+        f[6, E, j] = f8 - 0.5 * (f2 - f4) - (1 / 6) * rho_out * ux[E, j]
