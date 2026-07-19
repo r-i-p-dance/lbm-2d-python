@@ -15,7 +15,7 @@ class ConvergenceResult:
     iterations: int
     runtime_seconds: int
 
-def run_convergence_study(case_class, resolutions, **case_kwargs):
+def run_convergence_study(case_class, resolutions, tol=1e-8, **case_kwargs):
     total = len(resolutions)
     study_start = time.perf_counter()
 
@@ -24,7 +24,7 @@ def run_convergence_study(case_class, resolutions, **case_kwargs):
 
         ltc = case_class(ny=r, **case_kwargs)
         t0 = time.perf_counter()
-        ltc.converge(tol=1e-12)
+        ltc.converge(tol=tol)
         runtime = time.perf_counter() - t0
 
         u_numerical  = ltc.ux[ltc.nx // 2, 1:-1]
