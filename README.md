@@ -40,10 +40,8 @@ subsequent topology-optimisation work.
 The solver recovers analytical Poiseuille flow to floating-point precision. Convergence is clean second-order in Ny, as expected for BGK collision with half-way bounce-back at $\tau = 0.933$ (where the effective wall sits exactly at $y = 0.5$).
 
 A uniform body force `g_x` is applied at every fluid node, mimicking a constant
-pressure gradient. The channel is **periodic** in the flow direction: fluid
-leaving the right re-enters the left. Because the flow is translationally
-invariant along the channel, a very short domain suffices, and the analytical
-parabola is representable *exactly* on the lattice. This is the cleaner of the two
+pressure gradient. The channel is **periodic** in the flow direction. Because the flow is translationally
+invariant along the channel, a very short domain suffices. This is the cleaner of the two
 tests and isolates the interior physics.
 
 The body force required to achieve a target `u_max` is
@@ -51,25 +49,7 @@ The body force required to achieve a target `u_max` is
 ```
 g_x = 8 * nu * u_max / H_eff^2,   with H_eff = Ny - 2
 ```
- ---
- **SHORTEN THIS THINGY**
 
-The solver recovers the analytical parabola to within floating-point precision.
-The residual is flat at the level of `1e-8` to `1e-10` across the channel — i.e.
-the *shape* of the profile is essentially exact, and the observed error is set by
-the convergence tolerance rather than by discretisation. The measured convergence
-rate is close to the theoretical second order.
-
-Two conditions were essential to achieve this clean result:
-
-- **`tau = 0.933`.** At this relaxation time (`nu = 1/6` in the sense that the
-  two-point bounce-back constraint `(tau - 0.5)^2 = 3/16` is satisfied), the
-  effective bounce-back wall sits exactly at `y = 0.5`, matching the analytical
-  formula's assumption and removing the first-order wall-slip error.
-- **A tight convergence tolerance (`1e-12`).** With the physics correct, the
-  discretisation error is so small that a loose tolerance would measure the
-  *residual of the iteration* rather than the physical error, producing a
-  spurious (even positive) convergence slope.
 
 ### Case B — Pressure-driven channel
 
@@ -84,7 +64,7 @@ Two conditions were essential to achieve this clean result:
 
 A density (pressure) difference is imposed between inlet and outlet using
 **Zou-He** boundary conditions; the walls use half-way bounce-back. This channel
-is **not periodic** — it has genuine open boundaries. Pressure in LBM is related
+is **not periodic**. Pressure in LBM is related
 to density by `p = c_s^2 * rho = rho/3`, so prescribing a density difference
 prescribes a pressure difference.
 
@@ -98,48 +78,42 @@ rho_out = 1 - delta_rho/2
 
 Keeping the mean density at 1 (symmetric split around 1) maximises BGK stability.
 
----
-**SHORTEN THIS THINGY**
-
-The pressure-driven case also produces the correct parabolic profile, but with a
-larger and more structured error than the force-driven case. This is expected:
-open boundaries and the weakly-compressible nature of LBM introduce error sources
-that the periodic force-driven case does not have.
-
-The transient is physically rich. Imposing a pressure difference on a fluid at
-rest sends acoustic waves inward from *both* ends simultaneously (pressure
+Imposing a pressure difference on a fluid at
+rest sends acoustic waves inward from both ends simultaneously (pressure
 information propagates at the lattice sound speed in both directions). These waves
 meet, reflect, and slowly damp. Only after the acoustic ringing subsides does the
 flow settle into steady Poiseuille flow — which is why this case requires many
-more iterations to converge than the force-driven case, and why the pressure
-ramp is important.
+more iterations to converge than the force-driven case.
 
 ---
 
 <a name="error-analysis"></a>
 ## 2. Error Analysis: Magnitude and Profile Shape
 
-The two cases differ markedly in both the size and the spatial structure of their
-error, and understanding why is the most instructive part of this study.
-
 ### Magnitude
 
-The force-driven periodic case reaches residuals of `1e-8` or smaller — the
-parabola is representable exactly on the lattice, so the only error is iterative.
-The pressure-driven case reaches residuals of `1e-4` to `1e-5` — several orders
+The force-driven periodic case reaches residuals of `1e-8` or smaller. The pressure-driven case reaches residuals of `1e-4` to `1e-5` — several orders
 of magnitude larger — because it carries genuine physical discretisation error
 from its open boundaries and density variation.
 
 ### Profile shape
 
-The force-driven residual is **flat** (a constant offset at the tolerance level).
-The pressure-driven residual has **structure that changes with resolution**:
+<p align="center">
+  <img src="results\plots\profile_Ny16_PressurePoiseuille.png" width="49%"/>
+  <img src="results\plots\profile_Ny32_PressurePoiseuille.png" width="49%"/>
+</p>
+<p align="center">
+  <img src="results\plots\profile_Ny64_PressurePoiseuille.png" width="49%"/>
+  <img src="results\plots\profile_Ny128_PressurePoiseuille.png" width="49%"/>
+</p>
+
+Whereas the force-driven residual is flat (a constant offset at the tolerance level), the pressure-driven residual has structure that changes with resolution:
 
 - At low `Ny`, the error is entirely positive (LBM slightly exceeds analytical).
 - At intermediate `Ny`, the error changes sign across the channel.
 - At high `Ny`, the error becomes predominantly negative.
 
-This is the signature of **two competing error sources**:
+This is the signature of two competing error sources:
 
 1. **Compressibility error (positive).** In the pressure-driven channel the
    density varies along the flow direction from `rho_in` to `rho_out`. Since
@@ -164,8 +138,7 @@ order). At low-to-moderate resolution the second-order compressibility term
 dominates and the measured slope is steep (approaching or exceeding `-2`). Once
 compressibility drops below the slip floor, the first-order slip term takes over
 and the slope flattens towards `-1`. The pressure-driven convergence plot
-therefore shows a **regime transition**, not a single clean slope — which is
-itself a correct and physically meaningful result. Restricting the fit to the
+therefore shows a **regime transition**, not a single clean slope. Restricting the fit to the
 compressibility-limited regime recovers a second-order rate.
 
 ---
@@ -224,11 +197,10 @@ is mislocated by ~25% of the channel width; at `Ny = 64` this drops to ~1.5%.
 
 ```bash
 pip install -e .
-python main_forced.py       # forced-Poiseuille convergence study + animation
-python main_pressure.py     # pressure-Poiseuille convergence study + animation
+python main.py       # forced-Poiseuille and pressure-Poiseuille convergence study + animation
 ```
 
-Outputs are written to `results/plots/{forced,pressure}/` and
+Outputs are written to `results/plots/` and
 `results/animations/`. The convergence study prints per-resolution timings,
 iteration counts, and L2 errors to the terminal.
 
