@@ -2,7 +2,7 @@ import numpy as np
 from lbm.src.core.kernels import *
 
 class BaseLattice:
-    def __init__(self, nx=4, ny=16, tau_lbm=0.8):
+    def __init__(self, nx=4, ny=16, tau_lbm=0.933):
         self.nx         = nx
         self.ny         = ny
         self.it         = 0
@@ -73,3 +73,20 @@ class BaseLattice:
                     self.it = step
                     return step
         raise RuntimeError(f"No convergence after {max_steps} steps (last change: {change:.3e})")
+
+
+    def zou_he_pressure_west(self):
+        # Zou-He boundary condition at the west boundary (inlet)
+        nb_zou_he_pressure_west(self.f, self.ux, self.uy, self.rho, self.rho_in)
+            
+    def zou_he_pressure_east(self):
+        # Zou-He boundary condition at the east boundary (outlet)
+        nb_zou_he_pressure_east(self.f, self.ux, self.uy, self.rho, self.rho_out)
+
+    def zou_he_velocity_west(self, u_profile):
+        # Zou-He boundary condition at the west boundary (inlet)
+        nb_zou_he_velocity_west(self.f, self.ux, self.uy, self.rho, u_profile)
+
+    def outflow_east(self):
+        # zero-gradient: copy second-to-last column into the last
+        self.f[:, -1, :] = self.f[:, -2, :]
