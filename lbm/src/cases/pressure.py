@@ -1,6 +1,6 @@
 from lbm.src.core.analytical import poiseuille_from_pressure
 from lbm.src.core.lattice import BaseLattice
-from lbm.src.core.kernels import macro_kernel, zou_he_west_kernel, zou_he_east_kernel
+from lbm.src.core.kernels import macro_kernel
 
 
 class PressurePoiseuille(BaseLattice):
@@ -19,16 +19,8 @@ class PressurePoiseuille(BaseLattice):
         macro_kernel(self.f, self.ux, self.uy, self.rho, self.cx, self.cy, 0.0, self.obstacle)
 
     def apply_boundary_conditions(self):
-        self.zou_he_west()
-        self.zou_he_east()
-
-    def zou_he_west(self):
-        # Zou-He boundary condition at the west boundary (inlet)
-        zou_he_west_kernel(self.f, self.ux, self.uy, self.rho, self.rho_in)
-        
-    def zou_he_east(self):
-        # Zou-He boundary condition at the east boundary (outlet)
-        zou_he_east_kernel(self.f, self.ux, self.uy, self.rho, self.rho_out)
+        self.zou_he_pressure_west()
+        self.zou_he_pressure_east()
 
     def analytical_profile(self):
         return poiseuille_from_pressure(self.nx, self.ny, self.delta_rho, self.nu)
