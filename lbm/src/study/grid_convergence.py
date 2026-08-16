@@ -16,7 +16,7 @@ def upsample(field, factor):
     return np.repeat(np.repeat(field, factor, axis=0), factor, axis=1)
 
 
-def run_grid_convergence_study(case_class, resolutions, Re, tol=1e-8, **case_kwargs):
+def run_grid_convergence_study(case_class, resolutions, Re, lbm_tau=0.6, tol=1e-8, **case_kwargs):
     total = len(resolutions)
     resolutions = sorted(resolutions)
     max_r = resolutions[-1]
@@ -25,7 +25,7 @@ def run_grid_convergence_study(case_class, resolutions, Re, tol=1e-8, **case_kwa
 
     print(f"[1/{total}] Ny={max_r:<4} running…", end = "", flush=True)
 
-    ltc = case_class(ny=max_r, Re=Re, **case_kwargs)
+    ltc_reference = case_class(ny=max_r, Re=Re, tau_lbm=lbm_tau, **case_kwargs)
     t0 = time.perf_counter()
     ltc.converge(tol=tol)
     runtime = time.perf_counter() - t0
@@ -37,7 +37,7 @@ def run_grid_convergence_study(case_class, resolutions, Re, tol=1e-8, **case_kwa
     for idx, r in enumerate(resolutions[:-1], start=2):
         print(f"[{idx}/{total}] Ny={r:<4} running…", end = "", flush=True)
 
-        ltc = case_class(ny=r, Re=Re, **case_kwargs)
+        ltc = case_class(ny=r, Re=Re, tau_lbm=lbm_tau, **case_kwargs)
         t0 = time.perf_counter()
         ltc.converge(tol=tol)
         runtime = time.perf_counter() - t0
