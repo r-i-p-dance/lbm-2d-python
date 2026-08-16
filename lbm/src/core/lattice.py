@@ -67,11 +67,23 @@ class BaseLattice:
                 recorder.maybe_capture(step)
 
             if step % check_every == 0:
+
+                # Check for low-Mach violation
+                max_vel = np.max(np.abs(np.sqrt(self.ux**2 + self.uy**2)))
+                if max_vel > (1.0 / np.sqrt(3.0)) * 0.1:
+                    raise ValueError(
+                        f"Mach number {max_vel / (1.0 / np.sqrt(3.0)):.3f} exceeds 0.1 — LBM low-Mach assumption violated."
+                        f"Decrease Re, decrease tau, or increase Ny."
+                        f"(Currently Re={self.Re}, tau={self.tau_lbm}, u_max={self.u_max:.3f})"
+                    )
+
+                # Check for convergence
                 change = np.max(np.abs(self.ux - old_ux))
                 old_ux = self.ux.copy()
                 if change < tol:
                     self.it = step
                     return step
+                
         raise RuntimeError(f"No convergence after {max_steps} steps (last change: {change:.3e})")
 
 
