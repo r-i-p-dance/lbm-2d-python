@@ -135,8 +135,10 @@ def nb_zou_he_pressure_east(f, ux, uy, rho, rho_out):
         f[6, E, j] = f8 - 0.5 * (f2 - f4) - (1 / 6) * rho_out * ux[E, j]
 
 @njit(cache=True)
-def nb_zou_he_velocity_west(f, ux, uy, rho, u_profile):
+def nb_zou_he_velocity_west(f, ux, uy, rho, u_profile, obstacle):
     for j in range(1, uy.shape[1] - 1):
+        if obstacle[0, j]:
+            continue
 
         f0 = f[0, 0, j]
         f2 = f[2, 0, j]

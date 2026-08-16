@@ -99,7 +99,7 @@ class BaseLattice:
 
     def zou_he_velocity_west(self, u_profile):
         # Zou-He boundary condition at the west boundary (inlet)
-        nb_zou_he_velocity_west(self.f, self.ux, self.uy, self.rho, u_profile)
+        nb_zou_he_velocity_west(self.f, self.ux, self.uy, self.rho, u_profile, self.obstacle)
 
     def outflow_east(self):
         # zero-gradient: copy second-to-last column into the last
