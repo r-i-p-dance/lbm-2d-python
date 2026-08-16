@@ -27,12 +27,12 @@ def run_grid_convergence_study(case_class, resolutions, Re, lbm_tau=0.6, tol=1e-
 
     ltc_reference = case_class(ny=max_r, Re=Re, tau_lbm=lbm_tau, **case_kwargs)
     t0 = time.perf_counter()
-    ltc.converge(tol=tol)
+    ltc_reference.converge(tol=tol)
     runtime = time.perf_counter() - t0
-    u_ref = ltc.ux**2 + ltc.uy**2
+    u_ref = np.sqrt(ltc_reference.ux**2 + ltc_reference.uy**2)
     
     print(f"\r[1/{total}] Ny={max_r:<4} done in {runtime:7.2f}s "
-          f"({ltc.it:>8} iters |            )")
+          f"({ltc_reference.it:>8} iters |            )")
 
     for idx, r in enumerate(resolutions[:-1], start=2):
         print(f"[{idx}/{total}] Ny={r:<4} running…", end = "", flush=True)
@@ -41,14 +41,17 @@ def run_grid_convergence_study(case_class, resolutions, Re, lbm_tau=0.6, tol=1e-
         t0 = time.perf_counter()
         ltc.converge(tol=tol)
         runtime = time.perf_counter() - t0
-        u_c = ltc.ux**2 + ltc.uy**2
+        u_c   = np.sqrt(ltc.ux**2 + ltc.uy**2)
 
         # Upsample coarser field to the finest resolution for error comparison
         factor = max_r // r
-        u_up   = upsample(u_c, factor)
-         
-        L2_error    = np.sqrt(np.sum((u_up - u_ref)**2) 
-                            / np.sum(u_ref**2)
+
+        # Create a mask for the fluid region 
+        fluid_mask = ~ltc_reference.obstacle
+
+        diff_sq = (upsample(u_c, factor) - u_ref)**2
+        L2_error    = np.sqrt(np.sum(diff_sq[fluid_mask]) 
+                            / np.sum(u_ref[fluid_mask]**2)
                             )
 
         print(f"\r[{idx}/{total}] Ny={r:<4} done in {runtime:7.2f}s "
