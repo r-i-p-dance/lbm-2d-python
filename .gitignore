@@ -22,3 +22,11 @@ env/
 # OS junk
 Thumbs.db
 .DS_Store
+
+# Large binary animation files
+results/animations/**/*.gif
+!results/animations/BackwardStep/anim_Ny64_BackwardStep_Re10.gif
+!results/animations/ForcedPoiseuille/anim_Ny32_ForcedPoiseuille.gif
+!results/animations/PressurePoiseuille/anim_Ny32_PressurePoiseuille.gif
+!results/animations/TwoRectangles/anim_Ny64_TwoRectangles_Re10.gif
+!results/animations/Cylinder/anim_Ny64_Cylinder_Re10.gif
