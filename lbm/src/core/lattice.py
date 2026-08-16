@@ -52,10 +52,12 @@ class BaseLattice:
     def apply_forcing(self):pass
     def analytical_profile(self): pass
 
-    def run(self, n_steps):
+    def run(self, n_steps, recorder=None):
         """Advance exactly n_steps time steps."""
-        for _ in range(n_steps):
+        for step in range(1, n_steps+1):
             self.step()
+            if recorder is not None:
+                recorder.maybe_capture(step)
 
     def converge(self, tol=1e-8, check_every=500, max_steps=100_000_000, recorder=None):
         """Run until velocity stops changing. Returns the number of steps taken."""
