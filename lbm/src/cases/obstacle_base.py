@@ -12,13 +12,26 @@ class ObstacleChannel(BaseLattice):
         self.periodic_x = False
         self.obstacle[:, 0]  = True      # bottom wall
         self.obstacle[:, -1] = True      # top wall
-        self.inlet_profile = np.zeros(ny)
-        self.inlet_profile[1:-1] = self.u_max
         self._add_obstacles()
         self._check_stability()
+        self.inlet_profile = self._compute_parabolic_inlet()
 
     def _add_obstacles(self):
-        pass                             # base: no interior obstacles
+        pass                   
+
+    def _compute_parabolic_inlet(self):
+        """Poiseuille profile that satisfies no-slip at effective wall positions.
+
+        Overridden by cases that have partial-height inlets (e.g. BackwardStep).
+        """
+        ny = self.ny
+        j = np.arange(ny)
+        y_bot, y_top = 0.5, ny - 1.5
+        H = y_top - y_bot                        # = ny - 2
+        u = 4.0 * self.u_max * (j - y_bot) * (y_top - j) / H**2
+        u[0] = 0.0                                # solid nodes
+        u[-1] = 0.0
+        return u          # base: no interior obstacles
 
     def apply_boundary_conditions(self):
         self.zou_he_velocity_west(self.inlet_profile)
