@@ -8,7 +8,7 @@ class Recorder:
     def __init__(self, lattice, path, fps=15, dpi=100, 
                  max_steps=None,
                  every=None, every_min=None, every_max=None, accelerate_over=None,
-                 vmax_factor=1.0, cmap='RdBu_r', interpolation='none', 
+                 vmax_factor=None, cmap='RdBu_r', interpolation='none', 
                  print_progress=False):
 
         constant_mode = every is not None
@@ -44,6 +44,7 @@ class Recorder:
             vmin=0.0, 
             vmax=lattice.u_max * vmax_factor,
             interpolation=interpolation,
+            origin='lower'
         )
         self.ax.set_axis_off()
         self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
@@ -78,7 +79,8 @@ class Recorder:
 def record_development(case_class, nx, ny, path=None, Re=10.0, tau_lbm=0.933, 
                        tol=None, max_steps=None, 
                        every=None, every_min=None, every_max=None, accelerate_over=None, 
-                       cmap='RdBu_r', interpolation='none', vmax_factor=1.0, 
+                       cmap='RdBu_r', interpolation='none', 
+                       vmax_factor=None, 
                        print_progress=False, 
                        **case_kwargs):
 
@@ -86,6 +88,18 @@ def record_development(case_class, nx, ny, path=None, Re=10.0, tau_lbm=0.933,
             raise ValueError("Provide exactly one of tol or max_steps.")
 
     ltc = case_class(nx=nx, ny=ny, Re=Re, tau_lbm=tau_lbm, **case_kwargs)
+    if vmax_factor is None:
+        print(f"\nvmax_factor not specified. Warming up to estimate max velocity for {case_class.__name__} at {nx}x{ny}, Re={ltc.Re}, tau={ltc.tau_lbm}…", end="", flush=True)
+
+        # Warmup to get a good estimate of max velocity
+        ltc.run(3000, recorder=None)  
+        vmax = np.max(np.sqrt(ltc.ux**2 + ltc.uy**2))
+        vmax_factor = vmax / ltc.u_max
+
+        print(f"\rvmax_factor not specified. Estimated max velocity: {vmax:.4f}. Setting vmax_factor={vmax_factor:.3f} for recording.")
+
+        ltc = case_class(nx=nx, ny=ny, Re=Re, tau_lbm=tau_lbm, **case_kwargs)
+        
     rec = Recorder(
         ltc, path=path, 
         every=every, every_min=every_min, every_max=every_max, accelerate_over=accelerate_over, 
@@ -98,7 +112,6 @@ def record_development(case_class, nx, ny, path=None, Re=10.0, tau_lbm=0.933,
     mode = f"until convergence to tol={tol} ..." if tol is not None else f"for total {max_steps} steps…"
     print(f"\nRecording {case_class.__name__} at {nx}×{ny}, "
           f"Re={ltc.Re}, u_max={ltc.u_max:.4f}, Ma={ma:.3f}, {mode}")
-
     
     if max_steps is not None:
         ltc.run(max_steps, recorder=rec)
