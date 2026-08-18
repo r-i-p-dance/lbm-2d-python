@@ -2,6 +2,8 @@ from dataclasses import dataclass
 import numpy as np
 import time
 
+from lbm.src.plot.difference import plot_field_comparison
+
 
 @dataclass
 class ConvergenceResult:
@@ -58,6 +60,12 @@ def run_grid_convergence_study(case_class, resolutions, Re, lbm_tau=0.6, tol=1e-
         print(f"\r[{idx}/{total}] Ny={r:<4} done in {runtime:7.2f}s "
               f"({ltc.it:>8} iters | L2={L2_error:.2e} )")
 
+        plot_field_comparison(
+                u_ref_norm, u_up_norm, 
+                save_path=f"results/plots/{case_class.__name__}/diff_{case_class.__name__}_{max_r}_vs_{r}_Re{int(Re)}_tol{tol}",
+                title=f"{case_class.__name__}: Ny={max_r} vs Ny={r} (L2={L2_error:.3e})",
+            )
+        
         yield ConvergenceResult(
             Ny=r,
             L2_error=L2_error,
