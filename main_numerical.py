@@ -10,15 +10,16 @@ from lbm.src.cases.backward_step import BackwardStep
 from lbm.src.cases.cylinder import Cylinder
 
 
-RESOLUTIONS = [32, 64, 128, 256]
+RESOLUTIONS = [32, 64, 128]
 Re          = 10.0
 lbm_tau     = 0.6
 tol         = 1e-8
 
 # Run the study
 for case in [TwoRectangles, BackwardStep, Cylinder]:
-    print(f"\nRunning grid convergence study for {case.__name__} at Re={Re}…")
-    results = run_grid_convergence_study(case, RESOLUTIONS, Re=Re, lbm_tau=lbm_tau, tol=tol)
+    print(f"\nRunning grid convergence study for {case.__name__} at tol={tol}, tau={lbm_tau}, Re={Re}…")
+    results = run_grid_convergence_study(case, RESOLUTIONS,
+                                         Re=Re, lbm_tau=lbm_tau, tol=tol)
 
     L2_errors = []
 
@@ -26,17 +27,17 @@ for case in [TwoRectangles, BackwardStep, Cylinder]:
     for i, r in enumerate(results):
         L2_errors.append(r.L2_error)
 
-        plot_convergence(RESOLUTIONS[:i+1], L2_errors, save_path=f"results/plots/{case.__name__}/convergence_{case.__name__}_Re{int(Re)}.png")
+        plot_convergence(RESOLUTIONS[:i+1], L2_errors, save_path=f"results/plots/{case.__name__}/convergence_{case.__name__}_Re{int(Re)}_tol{tol}.png")
 
-Re = 20.0
-RESOLUTIONS = [128]
-vmax_factors = [4.0, 0.8, 0.4]
+Re = 10.0
+RESOLUTIONS = [64]
 
 for i, case in enumerate([TwoRectangles, BackwardStep, Cylinder]):
     for r in RESOLUTIONS:
 
-        record_development(case, nx=5*r, ny=r, Re=Re, tau_lbm=0.6, max_steps=100_000, every=100, 
+        record_development(case, nx=5*r, ny=r, Re=Re, tau_lbm=0.6, max_steps=9000, 
+                           every_min=5, every_max=100, accelerate_over=3000, 
                            path=f"results/animations/{case.__name__}/anim_Ny{r}_{case.__name__}_Re{int(Re)}.gif",
-                           vmax_factor=vmax_factors[i], cmap='RdBu_r', interpolation='bilinear', 
+                           cmap='RdBu_r', interpolation='nearest', 
                            print_progress=False)
 
