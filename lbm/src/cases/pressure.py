@@ -4,16 +4,17 @@ from lbm.src.core.kernels import macro_kernel
 
 
 class PressurePoiseuille(BaseLattice):
-    def __init__(self, nx=None, ny=16, aspect=5, tau_lbm=0.933, u_max=0.04):
-        super().__init__(nx=ny*aspect, ny=ny, tau_lbm=tau_lbm)
-        self.u_max           = u_max
-        self.H_eff           = ny - 2
-        self.delta_rho       = 24 * self.nu * (self.nx - 1) * self.u_max / (self.H_eff)**2
+    def __init__(self, ny=16, aspect=5, Re=1.0, tau_lbm=0.933, periodic_x=True, **kwargs):
+        super().__init__(nx=ny*aspect, ny=ny, tau_lbm=tau_lbm, **kwargs)
+        self.Re              = Re
+        self.L_char          = ny - 2
+        self.u_max           = Re * self.nu / self.L_char
+        self.delta_rho       = 24 * self.nu * (self.nx - 1) * self.u_max / (self.L_char)**2
         self.rho_in          = 1.0 + self.delta_rho / 2
         self.rho_out         = 1.0 - self.delta_rho / 2
         self.obstacle[:, 0]  = True
         self.obstacle[:, -1] = True
-        self.periodic_x      = False
+        self.periodic_x      = periodic_x
 
     def macro(self):
         macro_kernel(self.f, self.ux, self.uy, self.rho, self.cx, self.cy, 0.0, self.obstacle)
