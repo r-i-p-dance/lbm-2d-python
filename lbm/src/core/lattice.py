@@ -59,9 +59,9 @@ class BaseLattice:
             if recorder is not None:
                 recorder.maybe_capture(step)
 
-    def converge(self, tol=1e-8, check_every=500, max_steps=100_000_000, recorder=None):
+    def converge(self, tol=1e-8, check_every=500, max_steps=1_000_000, recorder=None):
         """Run until velocity stops changing. Returns the number of steps taken."""
-        old_ux = self.ux.copy()
+        old_f = self.f.copy()
         for step in range(1, max_steps + 1):
             self.step()
 
@@ -80,9 +80,11 @@ class BaseLattice:
                     )
 
                 # Check for convergence
-                change = np.max(np.abs(self.ux - old_ux))
-                old_ux = self.ux.copy()
+                change = np.max(np.abs(self.f - old_f))
+                old_f = self.f.copy()
                 if change < tol:
+                    self.macro()
+                    self.equilibrium()
                     self.it = step
                     return step
                 
