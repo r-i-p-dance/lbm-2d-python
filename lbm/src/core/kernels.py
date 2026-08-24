@@ -135,23 +135,39 @@ def nb_zou_he_pressure_east(f, ux, uy, rho, rho_out):
         f[6, E, j] = f8 - 0.5 * (f2 - f4) - (1 / 6) * rho_out * ux[E, j]
 
 @njit(cache=True)
-def nb_zou_he_velocity_west(f, ux, uy, rho, u_profile, obstacle):
-    for j in range(1, uy.shape[1] - 1):
-        if obstacle[0, j]:
-            continue
+def nb_zou_he_pressure_south(f, ux, uy, rho, rho_out, i_from, i_to):
+    """Zou-He pressure BC on the south boundary (y=0), u_x = 0.
+    Applied only on columns [i_from, i_to) — the outlet opening."""
+    for i in range(i_from, i_to):
+        f0 = f[0, i, 0]
+        f1 = f[1, i, 0]
+        f3 = f[3, i, 0]
+        f4 = f[4, i, 0]
+        f7 = f[7, i, 0]
+        f8 = f[8, i, 0]
 
-        f0 = f[0, 0, j]
-        f2 = f[2, 0, j]
-        f3 = f[3, 0, j]
-        f4 = f[4, 0, j]
-        f6 = f[6, 0, j]
-        f7 = f[7, 0, j]
+        ux[i, 0] = 0.0
+        uy[i, 0] = 1.0 - ((f0 + f1 + f3 + 2 * (f4 + f7 + f8)) / rho_out)
+        rho[i, 0] = rho_out
 
-        ux_j = u_profile[j]
-        rho_j = (f0 + f2 + f4 + 2*(f3 + f6 + f7)) / (1.0 - ux_j)
+        f[2, i, 0] = f4 + (2 / 3) * rho_out * uy[i, 0]
+        f[5, i, 0] = f7 - 0.5 * (f1 - f3) + (1 / 6) * rho_out * uy[i, 0]
+        f[6, i, 0] = f8 + 0.5 * (f1 - f3) + (1 / 6) * rho_out * uy[i, 0]
+
+@njit(cache=True)
+def nb_zou_he_velocity_west(f, ux, uy, rho, u_profile, j_from, j_to):
+    """Zou-He velocity BC on the west boundary, applied only on rows
+    [j_from, j_to) — the inlet opening. u_profile is indexed from j_from."""
+    for j in range(j_from, j_to):
+        f0 = f[0, 0, j]; f2 = f[2, 0, j]; f3 = f[3, 0, j]
+        f4 = f[4, 0, j]; f6 = f[6, 0, j]; f7 = f[7, 0, j]
+
+        ux_j = u_profile[j - j_from]
+        rho_j = (f0 + f2 + f4 + 2 * (f3 + f6 + f7)) / (1.0 - ux_j)
         ux[0, j] = ux_j
         uy[0, j] = 0.0
         rho[0, j] = rho_j
-        f[1, 0, j] = f3 + (2/3)*rho_j*ux_j
-        f[5, 0, j] = f7 - 0.5*(f2 - f4) + (1/6)*rho_j*ux_j
-        f[8, 0, j] = f6 + 0.5*(f2 - f4) + (1/6)*rho_j*ux_j
+
+        f[1, 0, j] = f3 + (2 / 3) * rho_j * ux_j
+        f[5, 0, j] = f7 - 0.5 * (f2 - f4) + (1 / 6) * rho_j * ux_j
+        f[8, 0, j] = f6 + 0.5 * (f2 - f4) + (1 / 6) * rho_j * ux_j
