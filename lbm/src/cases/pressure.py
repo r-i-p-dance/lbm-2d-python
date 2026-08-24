@@ -15,6 +15,7 @@ class PressurePoiseuille(BaseLattice):
         self.obstacle[:, 0]  = True
         self.obstacle[:, -1] = True
         self.periodic_x      = periodic_x
+        self._check_stability_at_init()
 
     def macro(self):
         macro_kernel(self.f, self.ux, self.uy, self.rho, self.cx, self.cy, 0.0, self.obstacle)

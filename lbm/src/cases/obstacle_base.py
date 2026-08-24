@@ -13,7 +13,7 @@ class ObstacleChannel(BaseLattice):
         self.obstacle[:, 0]  = True      # bottom wall
         self.obstacle[:, -1] = True      # top wall
         self._add_obstacles()
-        self._check_stability()
+        self._check_stability_at_init()
         self.inlet_profile = self._compute_parabolic_inlet()
 
     def _add_obstacles(self):
@@ -37,7 +37,7 @@ class ObstacleChannel(BaseLattice):
         self.zou_he_velocity_west(self.inlet_profile)
         self.outflow_east()
 
-    def _check_stability(self):
+    def _check_stability_at_init(self):
             Ma = self.u_max / (1.0 / np.sqrt(3.0))
             if Ma > 0.1:
                 raise ValueError(

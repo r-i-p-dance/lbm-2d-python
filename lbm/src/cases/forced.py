@@ -12,6 +12,7 @@ class ForcedPoiseuille(BaseLattice):
         self.g_x             = 8 * self.nu * self.u_max / self.L_char**2
         self.obstacle[:, 0]  = True
         self.obstacle[:, -1] = True
+        self._check_stability_at_init()
         
 
     def macro(self):

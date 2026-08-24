@@ -13,7 +13,7 @@ class BackwardStep(ObstacleChannel):
         h_step = int(self._step_h_frac * H)
         self.L_char = H - h_step                # inlet height
         self.u_max = self.Re * self.nu / self.L_char
-        self._check_stability()
+        self._check_stability_at_init()
 
         # Recompute inlet with correct u_max and step geometry
         self.inlet_profile = self._compute_parabolic_inlet()

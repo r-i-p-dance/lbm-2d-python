@@ -69,17 +69,8 @@ class BaseLattice:
                 recorder.maybe_capture(step)
 
             if step % check_every == 0:
+                self.check_stability_running()
 
-                # Check for low-Mach violation
-                max_vel = np.max(np.abs(np.sqrt(self.ux**2 + self.uy**2)))
-                if max_vel > (1.0 / np.sqrt(3.0)) * 0.1:
-                    raise ValueError(
-                        f"Mach number {max_vel / (1.0 / np.sqrt(3.0)):.3f} exceeds 0.1 — LBM low-Mach assumption violated."
-                        f"Decrease Re, decrease tau, or increase Ny."
-                        f"(Currently Re={self.Re}, tau={self.tau_lbm}, u_max={self.u_max:.3f})"
-                    )
-
-                # Check for convergence
                 change = np.max(np.abs(self.f - old_f))
                 old_f = self.f.copy()
                 if change < tol:
@@ -89,6 +80,26 @@ class BaseLattice:
                     return step
                 
         raise RuntimeError(f"No convergence after {max_steps} steps (last change: {change:.3e})")
+
+    def _check_stability_at_init(self):
+        pass  # <- Hook for subclasses to check stability at init
+
+    def check_stability_running(self):
+        """Raise if the low-Mach assumption is violated.
+
+        Overridden to a no-op in solvers whose 'velocity' is not a fluid
+        velocity — the adjoint field is a sensitivity, so its moments carry
+        no Mach constraint.
+        """
+        max_vel = np.max(np.sqrt(self.ux**2 + self.uy**2))
+        if max_vel > (1.0 / np.sqrt(3.0)) * 0.1:
+            Re = getattr(self, "Re", "n/a")
+            u_max = getattr(self, "u_max", float("nan"))
+            raise ValueError(
+                f"Mach number {max_vel / (1.0 / np.sqrt(3.0)):.3f} exceeds 0.1 "
+                f"— LBM low-Mach assumption violated. "
+                f"Decrease Re, decrease tau, or increase ny. "
+                f"(Currently Re={Re}, tau={self.tau_lbm}, u_max={u_max:.3f})")
 
 
     def zou_he_pressure_west(self):

@@ -17,7 +17,7 @@ class Cylinder(ObstacleChannel):
         D = self._diameter_fraction * (self.ny - 2)
         self.L_char = D
         self.u_max = self.Re * self.nu / self.L_char
-        self._check_stability()
+        self._check_stability_at_init()
 
     def _add_obstacles(self):
         nx, ny = self.nx, self.ny
