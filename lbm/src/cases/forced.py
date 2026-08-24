@@ -4,11 +4,12 @@ from lbm.src.core.kernels import macro_kernel, collide_kernel, forcing_kernel
 
 
 class ForcedPoiseuille(BaseLattice):
-    def __init__(self, nx=8, ny=16, tau_lbm=0.933, u_max=0.04):
+    def __init__(self, nx=8, ny=16, Re=1.0, tau_lbm=0.933):
         super().__init__(nx=nx, ny=ny, tau_lbm=tau_lbm)
-        self.u_max           = u_max
-        self.H_eff           = ny - 2
-        self.g_x             = 8 * self.nu * self.u_max / self.H_eff**2
+        self.Re              = Re
+        self.L_char          = ny - 2
+        self.u_max           = Re * self.nu / self.L_char
+        self.g_x             = 8 * self.nu * self.u_max / self.L_char**2
         self.obstacle[:, 0]  = True
         self.obstacle[:, -1] = True
         
