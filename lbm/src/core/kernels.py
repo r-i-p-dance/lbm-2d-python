@@ -115,10 +115,10 @@ def nb_zou_he_pressure_west(f, ux, uy, rho, rho_in):
         f[8, 0, j] = f6 + 0.5 * (f2 - f4) + (1 / 6) * rho_in * ux[0, j]
 
 @njit(cache=True)
-def nb_zou_he_pressure_east(f, ux, uy, rho, rho_out):
-    nx, ny = ux.shape
-    E = nx - 1
-    for j in range(1, ny - 1):
+def nb_zou_he_pressure_east(f, ux, uy, rho, rho_out, j_from, j_to):
+    nx,_   = ux.shape
+    E      = nx - 1
+    for j in range(j_from, j_to):
         f0 = f[0, E, j]
         f1 = f[1, E, j]
         f2 = f[2, E, j]
@@ -171,3 +171,53 @@ def nb_zou_he_velocity_west(f, ux, uy, rho, u_profile, j_from, j_to):
         f[1, 0, j] = f3 + (2 / 3) * rho_j * ux_j
         f[5, 0, j] = f7 - 0.5 * (f2 - f4) + (1 / 6) * rho_j * ux_j
         f[8, 0, j] = f6 + 0.5 * (f2 - f4) + (1 / 6) * rho_j * ux_j
+
+
+@njit(cache=True)
+def brinkman_collide_kernel(f, f_eq, omega_eff, obstacle):
+    """BGK collision with a per-cell relaxation rate, skipping solids."""
+    nx, ny = obstacle.shape
+    for i in range(nx):
+        for j in range(ny):
+            if obstacle[i, j]:
+                continue
+            w = omega_eff[i, j]
+            for k in range(9):
+                f[k, i, j] -= w * (f[k, i, j] - f_eq[k, i, j])
+
+
+@njit(cache=True)
+def adjoint_collide_kernel(f, ux, uy, omega_eff, source, w, cx, cy, obstacle):
+    """Adjoint collision: build the transposed-Jacobian equilibrium from the
+    moments A, Bx, By and relax toward it, adding the source.
+
+    Fused into one kernel — the moments are per-cell, so there is no reason
+    to materialise E, D_x, D_y as (9,nx,ny) arrays as the NumPy version does.
+    """
+    nx, ny = obstacle.shape
+    for i in range(nx):
+        for j in range(ny):
+            if obstacle[i, j]:
+                continue
+
+            u_x = ux[i, j]
+            u_y = uy[i, j]
+            usq = u_x * u_x + u_y * u_y
+
+            A = 0.0
+            Bx = 0.0
+            By = 0.0
+            for k in range(9):
+                cu = cx[k] * u_x + cy[k] * u_y
+                E = 1.0 + 3.0 * cu + 4.5 * cu * cu - 1.5 * usq
+                Dx = 3.0 * cx[k] + 9.0 * cu * cx[k] - 3.0 * u_x
+                Dy = 3.0 * cy[k] + 9.0 * cu * cy[k] - 3.0 * u_y
+                fk = f[k, i, j]
+                A += w[k] * E * fk
+                Bx += w[k] * Dx * fk
+                By += w[k] * Dy * fk
+
+            om = omega_eff[i, j]
+            for k in range(9):
+                f_eq_k = A + Bx * (cx[k] - u_x) + By * (cy[k] - u_y)
+                f[k, i, j] += -om * (f[k, i, j] - f_eq_k) + source[k, i, j]
