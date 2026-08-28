@@ -15,6 +15,7 @@ class ObstacleChannel(BaseLattice):
         self._add_obstacles()
         self._check_stability_at_init()
         self.inlet_profile = self._compute_parabolic_inlet()
+        self.rho_out = 1.0
 
     def _add_obstacles(self):
         pass                   
@@ -34,8 +35,8 @@ class ObstacleChannel(BaseLattice):
         return u          # base: no interior obstacles
 
     def apply_boundary_conditions(self):
-        self.zou_he_velocity_west(self.inlet_profile)
-        self.outflow_east()
+        self.zou_he_velocity_west(self.inlet_profile, 1, self.ny - 1)
+        self.zou_he_pressure_east()
 
     def _check_stability_at_init(self):
             Ma = self.u_max / (1.0 / np.sqrt(3.0))
