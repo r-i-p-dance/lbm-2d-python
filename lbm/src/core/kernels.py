@@ -172,6 +172,29 @@ def nb_zou_he_velocity_west(f, ux, uy, rho, u_profile, j_from, j_to):
         f[5, 0, j] = f7 - 0.5 * (f2 - f4) + (1 / 6) * rho_j * ux_j
         f[8, 0, j] = f6 + 0.5 * (f2 - f4) + (1 / 6) * rho_j * ux_j
 
+@njit(cache=True)
+def nb_zou_he_velocity_south(f, ux, uy, rho, u_profile, i_from, i_to):
+    """Zou-He velocity BC on the south boundary (y=0), u_x = 0. u_y is prescribed."""
+
+    for i in range(i_from, i_to):
+        f0 = f[0, i, 0]
+        f1 = f[1, i, 0]
+        f3 = f[3, i, 0]
+        f4 = f[4, i, 0]
+        f7 = f[7, i, 0]
+        f8 = f[8, i, 0]
+
+        uy_i = u_profile[i - i_from]
+        rho_i = (f0 + f1 + f3 + 2.0 * (f4 + f7 + f8)) / (1.0 - uy_i)
+
+        ux[i, 0] = 0.0
+        uy[i, 0] = uy_i
+        rho[i, 0] = rho_i
+
+        f[2, i, 0] = f4 + (2.0 / 3.0) * rho_i * uy_i
+        f[5, i, 0] = f7 - 0.5 * (f1 - f3) + (1.0 / 6.0) * rho_i * uy_i
+        f[6, i, 0] = f8 + 0.5 * (f1 - f3) + (1.0 / 6.0) * rho_i * uy_i
+
 
 @njit(cache=True)
 def brinkman_collide_kernel(f, f_eq, omega_eff, obstacle):
