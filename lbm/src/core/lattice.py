@@ -106,14 +106,17 @@ class BaseLattice:
         # Zou-He boundary condition at the west boundary (inlet)
         nb_zou_he_pressure_west(self.f, self.ux, self.uy, self.rho, self.rho_in)
             
-    def zou_he_pressure_east(self):
+    def zou_he_pressure_east(self, j_from, j_to):
         # Zou-He boundary condition at the east boundary (outlet)
-        nb_zou_he_pressure_east(self.f, self.ux, self.uy, self.rho, self.rho_out)
+        nb_zou_he_pressure_east(self.f, self.ux, self.uy, self.rho, self.rho_out, j_from, j_to)
 
-    def zou_he_velocity_west(self, u_profile):
+    def zou_he_velocity_west(self, u_profile, j_from, j_to):
         # Zou-He boundary condition at the west boundary (inlet)
-        nb_zou_he_velocity_west(self.f, self.ux, self.uy, self.rho, u_profile, self.obstacle)
+        nb_zou_he_velocity_west(self.f, self.ux, self.uy, self.rho, u_profile, j_from, j_to)
 
+    def zou_he_velocity_south(self, u_profile, i_from, i_to):
+        nb_zou_he_velocity_south(self.f, self.ux, self.uy, self.rho, u_profile, i_from, i_to)
+        
     def outflow_east(self):
         # zero-gradient: copy second-to-last column into the last
         self.f[:, -1, :] = self.f[:, -2, :]
