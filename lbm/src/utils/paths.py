@@ -37,7 +37,9 @@ def get_safe_filepath(filepath_str, create_parents=True):
 class RunPaths:
     """Resolve one free run name, then derive every artifact path from it.
 
-    Note: The animation is now an MP4 instead of a GIF.
+    Note: The animation is now an MP4 instead of a GIF, and the still frame
+    a PNG instead of a JPEG — the still is a poster asset, and lossless is
+    the only way its colours match the figures saved directly.
 
 
     Single source of truth for output naming: the animation, still frame,
@@ -45,8 +47,8 @@ class RunPaths:
     can never drift apart. Resolving each independently would allow the GIF
     to land on _2 while the log lands on _3.
 
-        results/animations/pipe_bend_2.gif
-        results/plots/pipe_bend_2.jpg
+        results/animations/pipe_bend_2.mp4
+        results/plots/pipe_bend_2.png
         results/logs/pipe_bend_2.txt
         results/logs/pipe_bend_2_fields.txt
         results/arrays/pipe_bend_2.npz
@@ -75,7 +77,7 @@ class RunPaths:
     def _candidates(root, stem):
         return {
             "animation": str(root / "animations" / f"{stem}.mp4"),
-            "plot":      str(root / "plots"      / f"{stem}.jpg"),
+            "plot":      str(root / "plots"      / f"{stem}.png"),
             "log":       str(root / "logs"       / f"{stem}.txt"),
             "fields":    str(root / "logs"       / f"{stem}_fields.txt"),
             "arrays":    str(root / "arrays"     / f"{stem}.npz"),
