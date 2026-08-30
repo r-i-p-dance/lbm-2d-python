@@ -73,6 +73,12 @@ class Recorder:
                   end="", flush=True)
         return True
 
+    def save_last_frame(self, path, dpi=300):
+        """Still of the final state, for the poster and the README."""
+        self.fig.savefig(path, dpi=dpi, facecolor=style.GROUND,
+                         edgecolor="none", bbox_inches="tight", pad_inches=0)
+        return path
+
     def close(self):
         self.writer.finish()
 
@@ -120,8 +126,12 @@ def record_development(case_class, nx, ny, path=None, Re=10.0, tau_lbm=0.933,
     
     print(f"\nRecording complete. Saving to {path} ...", end="", flush=True)
 
+    if still_path is not None:
+        rec.save_last_frame(still_path)
+
     rec.close()
 
     print(f"\rRecording complete. Saved to {path}")
+    if still_path is not None:
+        print(f"Final frame saved to {still_path}")
     print()
-
