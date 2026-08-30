@@ -14,19 +14,16 @@ not), and it happens to be among the highest-chroma pairs that also survive
 print. Safety and vibrancy are not in conflict here.
 
 CVD STRATEGY. Keep chroma high; get separability from luminance spacing and
-DASH PATTERNS, never from muting hue. Paired series (alpha/beta, fwd/adj)
-are always colour + linestyle, so they remain readable in greyscale and
-under any CVD type.
-
-FIELD MAPS. inferno for sequential data: perceptually uniform, CVD-safe,
-and its dark end merges into the ground so the data appears to emerge from
-the page rather than sitting in a box.
+DASH PATTERNS, never from muting hue. Paired series are always separated by
+linestyle as well as value, so they remain readable in greyscale and under
+any CVD type. The metric series take this to its conclusion and drop hue
+altogether — see S_METRIC below for why that is a design choice about
+attention, not a retreat from the palette.
 
 Set THEME = "light" for a warm-paper variant using the same hues darkened
 for white stock.
 """
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
@@ -35,7 +32,7 @@ plt.rcParams.update({
     "font.sans-serif": ["Neue Haas Grotesk Display Pro",
                         "Neue Haas Grotesk Text Pro",
                         "Helvetica Neue", "Helvetica", "Arial",
-                        "DejaVu Sans"],
+                        ],
     "font.weight": "medium",
     "axes.titleweight": "medium",
     "mathtext.fontset": "custom",
@@ -85,7 +82,7 @@ MAGENTA, VIOLET = _P["MAGENTA"], _P["VIOLET"]
 MINT, CORAL = _P["MINT"], _P["CORAL"]
 
 # ------------------------------------------------- sequential: cool arm
-# Forward velocity. The cool half of the diverging scale, extended down
+# Adjoint momentum. The cool half of the diverging scale, extended down
 # into the ground and up into ice-white. Anchors at 0.24, 0.62 and 0.85
 # luminance are the same three cyans used in DIVERGING, so the panels read
 # as one system rather than three unrelated maps.
@@ -103,7 +100,7 @@ SEQUENTIAL_COOL = mcolors.LinearSegmentedColormap.from_list(
     N=256)
 
 # ------------------------------------------------- sequential: warm arm
-# Adjoint momentum. The warm half of the same scale. Sharing the umber,
+# Forward velocity. The warm half of the same scale. Sharing the umber,
 # amber and pale-gold anchors with DIVERGING means the adjoint panel and
 # the positive lobe of the sensitivity panel are literally the same colours.
 SEQUENTIAL_WARM = mcolors.LinearSegmentedColormap.from_list(
@@ -114,8 +111,10 @@ SEQUENTIAL_WARM = mcolors.LinearSegmentedColormap.from_list(
      "#92400E", "#5C2A08", "#2A1206", GROUND],
     N=256)
 
-# Kept for anything that wants a single default sequential map.
-SEQUENTIAL = SEQUENTIAL_COOL
+# Physical flow uses the warm ramp; dual and error quantities use the cool
+# arm. Named aliases so figure code states the ROLE, not the hue.
+SEQUENTIAL_FLOW = SEQUENTIAL_WARM      # velocity, momentum
+SEQUENTIAL_DUAL = SEQUENTIAL_COOL      # adjoint, residuals, differences
 
 # --------------------------------------------------- diverging: fields
 # Centre is the GROUND colour, not white: on a dark figure a white centre
@@ -144,15 +143,49 @@ DESIGN = mcolors.LinearSegmentedColormap.from_list(
     N=256)
 
 # ------------------------------------------------------------- series
-# (colour, linestyle) — never colour alone. Paired series use the two
-# identity hues so the metric row belongs to the same palette as the
-# fields; the rest fall back to the secondary accents.
-S_LOSS  = (CYAN,    "-")
-S_LAM   = (MAGENTA, "-")
-S_ALPHA = (AMBER,   "-")
-S_BETA  = (VIOLET,  "--")
-S_FWD   = (CYAN,    "-")
-S_ADJ   = (AMBER,   "--")
+# (colour, linestyle) — never colour alone.
+#
+# METRIC SERIES ARE ACHROMATIC. These panels sit directly beneath the field
+# maps, and chroma there is not free: a saturated line is exactly as loud as
+# the physics next to it, so the metric row ends up competing with the
+# simulation for attention instead of supporting it. Reserving colour for
+# the fields is what keeps the eye going to them first.
+#
+# Separation instead comes from LUMINANCE plus DASH PATTERN — the same two
+# mechanisms the CVD strategy above already relies on, with hue removed.
+# That makes these the most robust series in the file: they survive
+# greyscale, every CVD type, and a cheap poster print.
+S_METRIC = (TEXT,  "-")      # the quantity a panel is about
+S_ALT    = (MUTED, "--")     # its partner, where a panel shows two
+S_REF    = (MUTED, ":")      # a limit or threshold — a rule, not data
+
+# Verification series. These DO keep their chroma: they are standalone
+# figures with no field map beside them to compete with, and the hue is
+# carrying meaning — amber is the physical/reference quantity, cyan the
+# computed result being checked against it, magenta the residual because
+# it is neither.
+S_NUM   = (CYAN,    "-")
+S_EXACT = (AMBER,   "-")
+S_FIT   = (AMBER,   "--")
+S_RESID = (MAGENTA, "-")
+
+# -------------------------------------------------------- solid material
+# Obstacles and walls. Separated from the flow ramp by HUE rather than
+# brightness: the ramp lives on the amber axis, so a cool near-black reads
+# as a different substance rather than as "slightly more flow". Kept close
+# to GROUND in value so the geometry is present without competing with the
+# physics for attention.
+
+# Tested:
+# 1. #131A2B - too bright and distinct from the ground
+# 2. #0B0D15 - too dark
+# 3. #0D1019 - seems fine for now
+# 4. #0E121D
+# 5. #101422
+# 6. #121724
+
+SOLID = "#0D1019"
+
 
 
 def apply_figure_style(fig, axes, image_axes=()):
@@ -165,4 +198,31 @@ def apply_figure_style(fig, axes, image_axes=()):
             s.set_linewidth(0.8)
         ax.tick_params(colors=MUTED, labelcolor=MUTED)
         ax.title.set_color(TEXT)
+        ax.xaxis.label.set_color(MUTED)
+        ax.yaxis.label.set_color(MUTED)
         ax.grid(color=RULE, alpha=0.45, linewidth=0.6)
+
+
+def style_colorbar(cb):
+    """Match a colorbar's frame and ticks to the figure rules."""
+    cb.outline.set_edgecolor(RULE)
+    cb.outline.set_linewidth(0.8)
+    cb.ax.tick_params(colors=MUTED, labelcolor=MUTED, labelsize=7)
+    cb.ax.yaxis.get_offset_text().set_color(MUTED)
+
+
+def style_legend(leg):
+    """Legends sit on the panel, not on a white card."""
+    frame = leg.get_frame()
+    frame.set_facecolor(PANEL)
+    frame.set_edgecolor(RULE)
+    frame.set_linewidth(0.8)
+    for text in leg.get_texts():
+        text.set_color(TEXT)
+    return leg
+
+
+def save(fig, path, dpi=300, **kwargs):
+    """Save without matplotlib punching a white border round the ground."""
+    kwargs.setdefault("bbox_inches", "tight")
+    fig.savefig(path, dpi=dpi, facecolor=GROUND, edgecolor="none", **kwargs)
