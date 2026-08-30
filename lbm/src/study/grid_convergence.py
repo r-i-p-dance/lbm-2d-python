@@ -18,7 +18,7 @@ def upsample(field, factor):
     return np.repeat(np.repeat(field, factor, axis=0), factor, axis=1)
 
 
-def run_grid_convergence_study(case_class, resolutions, Re, lbm_tau=0.6, tol=1e-8, **case_kwargs):
+def run_grid_convergence_study(case_class, resolutions, Re, tau_lbm=0.6, tol=1e-8, **case_kwargs):
     total = len(resolutions)
     resolutions = sorted(resolutions)
     max_r = resolutions[-1]
@@ -26,7 +26,7 @@ def run_grid_convergence_study(case_class, resolutions, Re, lbm_tau=0.6, tol=1e-
 
     print(f"[1/{total}] Ny={max_r:<4} running…", end = "", flush=True)
 
-    ltc_reference = case_class(ny=max_r, Re=Re, tau_lbm=lbm_tau, **case_kwargs)
+    ltc_reference = case_class(ny=max_r, Re=Re, tau_lbm=tau_lbm, **case_kwargs)
     t0 = time.perf_counter()
     ltc_reference.converge(tol=tol)
     runtime = time.perf_counter() - t0
@@ -39,7 +39,7 @@ def run_grid_convergence_study(case_class, resolutions, Re, lbm_tau=0.6, tol=1e-
     for idx, r in enumerate(resolutions[:-1], start=2):
         print(f"[{idx}/{total}] Ny={r:<4} running…", end = "", flush=True)
 
-        ltc = case_class(ny=r, Re=Re, tau_lbm=lbm_tau, **case_kwargs)
+        ltc = case_class(ny=r, Re=Re, tau_lbm=tau_lbm, **case_kwargs)
         t0 = time.perf_counter()
         ltc.converge(tol=tol)
         runtime = time.perf_counter() - t0
@@ -60,10 +60,17 @@ def run_grid_convergence_study(case_class, resolutions, Re, lbm_tau=0.6, tol=1e-
         print(f"\r[{idx}/{total}] Ny={r:<4} done in {runtime:7.2f}s "
               f"({ltc.it:>8} iters | L2={L2_error:.2e} )")
 
+        # Each field carries its OWN geometry: the coarse run's staircase is
+        # blockier than the reference's, and that is part of the error being
+        # measured. The difference panel defaults to the union of the two,
+        # which is exactly ~fluid_mask — the cells the L2 norm above is
+        # taken over, so figure and number describe the same region.
         plot_field_comparison(
-                u_ref_norm, u_up_norm, 
+                u_ref_norm, u_up_norm,
                 save_path=f"results/plots/{case_class.__name__}/diff_{case_class.__name__}_{max_r}_vs_{r}_Re{int(Re)}_tol{tol}",
                 title=f"{case_class.__name__}: Ny={max_r} vs Ny={r} (L2={L2_error:.3e})",
+                obstacle_ref=ltc_reference.obstacle,
+                obstacle_coarse=obstacle_up,
             )
         
         yield ConvergenceResult(
