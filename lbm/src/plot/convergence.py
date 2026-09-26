@@ -5,23 +5,22 @@ from matplotlib.ticker import (FixedLocator, FixedFormatter, FuncFormatter,
 
 from lbm.src.plot import style
 
-def _sci(value, _pos=None):
-    """Format as m x 10^e in mathtext, e.g. 9.2 x 10^-2."""
-    if value <= 0:
-        return ""
-    exponent = int(np.floor(np.log10(value)))
-    mantissa = value / 10.0**exponent
-    return rf"${mantissa:.1f}\times10^{{{exponent}}}$"
 
+def plot_convergence(Ny_values, L2_errors, save_path, title=None,
+                     modules=(11, 7)):
+    """Log-log grid convergence with a fitted rate, sized to the poster grid.
 
-def plot_convergence(Ny_values, L2_errors, save_path, title=None):
-    """Log-log grid convergence with a fitted rate.
+    `modules` is the size of the PLOT RECTANGLE in grid units; the saved
+    file is one module larger on every side. See style.poster_figure.
 
     Ticks are placed at the DATA, not on a generic decade grid: one x tick
     per resolution tested and one y tick per measured error, so the reader
     can read the slope off the axes directly rather than trusting the
     printed fit. Minor gridlines are kept because the uneven spacing within
     a decade is what makes the log scale legible as a log scale.
+
+    There are no axis labels. One module of margin is 26.4 pt and the tick
+    labels need all of it, so what the axes represent is said in the title.
 
     Cyan marks what the solver produced, amber the fitted rate it is being
     measured against — the same roles those hues hold in the metric row.
@@ -32,7 +31,7 @@ def plot_convergence(Ny_values, L2_errors, save_path, title=None):
     Ny_values = np.asarray(Ny_values, dtype=float)
     L2_errors = np.asarray(L2_errors, dtype=float)
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = style.poster_figure(*modules)
 
     slope, intercept = np.polyfit(np.log(Ny_values), np.log(L2_errors), 1)
     fitted = np.exp(intercept) * Ny_values**slope
@@ -40,13 +39,13 @@ def plot_convergence(Ny_values, L2_errors, save_path, title=None):
     # Fit underneath the data: the measurement is the subject, the fit is
     # the reference it is read against.
     colour, linestyle = style.S_FIT
-    ax.plot(Ny_values, fitted, color=colour, ls=linestyle, lw=2,
-            label=rf"Fitted rate: {slope:.2f}")
+    ax.plot(Ny_values, fitted, color=colour, ls=linestyle,
+            label=rf"fitted rate: {slope:.2f}")
 
     colour, _ = style.S_NUM
-    ax.plot(Ny_values, L2_errors, "o", color=colour, ms=8,
-            markeredgecolor=style.GROUND, markeredgewidth=1.2,
-            label=r"Measured $L_2$ error", zorder=3)
+    ax.plot(Ny_values, L2_errors, "o", color=colour,
+            markeredgecolor=style.GROUND, markeredgewidth=style.SPINE_PT,
+            label=r"measured $L_2$ error", zorder=3)
 
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -58,9 +57,14 @@ def plot_convergence(Ny_values, L2_errors, save_path, title=None):
     ax.xaxis.set_minor_locator(LogLocator(base=10.0, subs="all", numticks=20))
     ax.xaxis.set_minor_formatter(NullFormatter())
 
-    # One y tick per measured error, so each point is readable off the axis.
+    # One y tick per measured error, so each point is readable off the axis,
+    # divided by a common factor so the labels stay short — written out in
+    # full these are 3.7x10^-3, 8.2x10^-4, 1.9x10^-4, 4.6x10^-5, which
+    # rotated into the gutter are 47 pt tall and land 1.3 pt apart.
+    exponent = style.factor_exponent(L2_errors)
     ax.yaxis.set_major_locator(FixedLocator(L2_errors))
-    ax.yaxis.set_major_formatter(FuncFormatter(_sci))
+    ax.yaxis.set_major_formatter(
+        FuncFormatter(lambda v, _p=None: f"{v / 10.0**exponent:.2g}"))
     ax.yaxis.set_minor_locator(LogLocator(base=10.0, subs="all", numticks=20))
     ax.yaxis.set_minor_formatter(NullFormatter())
 
@@ -68,20 +72,25 @@ def plot_convergence(Ny_values, L2_errors, save_path, title=None):
     ax.set_xlim(Ny_values.min() / 1.35, Ny_values.max() * 1.35)
     ax.set_ylim(L2_errors.min() / 1.6, L2_errors.max() * 1.6)
 
-    ax.set_xlabel(r"Grid resolution $N_y$   (log scale)", fontsize=13)
-    ax.set_ylabel(r"$L_2$ error   (log scale)", fontsize=13)
-    ax.set_title(title or "Method convergence rate study", fontsize=16)
+    ax.set_title(title or "method convergence rate study")
 
     style.apply_figure_style(fig, [ax])
 
     # Major grid ties each tick to its point; minor grid carries the decade
     # structure that identifies the axes as logarithmic.
-    ax.grid(True, which="major", color=style.RULE, alpha=0.55, lw=0.8, ls="-")
-    ax.grid(True, which="minor", color=style.RULE, alpha=0.20, lw=0.5, ls="-")
+    ax.grid(True, which="major", color=style.RULE, alpha=style.GRID_ALPHA,
+            lw=style.GRID_PT, ls="-")
+    ax.grid(True, which="minor", color=style.RULE, alpha=style.GRID_MINOR_ALPHA,
+            lw=style.GRID_PT / 2, ls="-")
     ax.set_axisbelow(True)
 
-    style.style_legend(ax.legend(fontsize=11, loc="best"))
+    # Pinned, not "best": error falls left to right, so the upper right is
+    # always the empty corner. "best" would move the legend whenever the
+    # study is re-run with another resolution.
+    style.style_legend(ax.legend(loc="upper right"))
 
-    fig.tight_layout()
-    style.save(fig, save_path, dpi=300)
+    style.rotate_y_labels(ax)
+    style.factor_label(ax, style.factor_text(exponent))
+
+    style.save_exact(fig, save_path)
     plt.close(fig)
