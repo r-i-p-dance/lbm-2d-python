@@ -96,9 +96,14 @@ def bounce_back_kernel(f, opposite, obstacle):
                 f[k, i, j] = temp[opposite[k]]
 
 @njit(cache=True)
-def nb_zou_he_pressure_west(f, ux, uy, rho, rho_in):
-    _, ny = ux.shape
-    for j in range(1, ny - 1):
+def nb_zou_he_pressure_west(f, ux, uy, rho, rho_in, j_from, j_to):
+    """Zou-He pressure BC on the west boundary (x=0), u_y = 0.
+
+    Applied only on rows [j_from, j_to). The range arguments let one wall
+    carry several openings — here a velocity inlet and a pressure outlet on
+    disjoint row ranges.
+    """
+    for j in range(j_from, j_to):
         f0 = f[0, 0, j]
         f2 = f[2, 0, j]
         f3 = f[3, 0, j]
@@ -107,12 +112,12 @@ def nb_zou_he_pressure_west(f, ux, uy, rho, rho_in):
         f7 = f[7, 0, j]
 
         uy[0, j] = 0.0
-        ux[0, j] = 1 - ((f0 + f2 + f4 + 2 * (f3 + f6 + f7)) / rho_in)
+        ux[0, j] = 1.0 - ((f0 + f2 + f4 + 2.0 * (f3 + f6 + f7)) / rho_in)
         rho[0, j] = rho_in
 
-        f[1, 0, j] = f3 + (2 / 3) * rho_in * ux[0, j]
-        f[5, 0, j] = f7 - 0.5 * (f2 - f4) + (1 / 6) * rho_in * ux[0, j]
-        f[8, 0, j] = f6 + 0.5 * (f2 - f4) + (1 / 6) * rho_in * ux[0, j]
+        f[1, 0, j] = f3 + (2.0 / 3.0) * rho_in * ux[0, j]
+        f[5, 0, j] = f7 - 0.5 * (f2 - f4) + (1.0 / 6.0) * rho_in * ux[0, j]
+        f[8, 0, j] = f6 + 0.5 * (f2 - f4) + (1.0 / 6.0) * rho_in * ux[0, j]
 
 @njit(cache=True)
 def nb_zou_he_pressure_east(f, ux, uy, rho, rho_out, j_from, j_to):
