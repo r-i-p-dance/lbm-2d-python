@@ -2,15 +2,23 @@ from dataclasses import dataclass
 import numpy as np
 import time
 
-from lbm.src.plot.difference import plot_field_comparison
-
 
 @dataclass
 class ConvergenceResult:
+    """One coarse run measured against the reference.
+
+    Carries the fields as well as the numbers so the driver decides what to
+    draw with them — poster PDFs or a combined README figure. They are
+    references to arrays the study already holds, not copies.
+    """
     Ny: int
     L2_error: float
     iterations: int
     runtime_seconds: float
+    u_ref: np.ndarray
+    u_up: np.ndarray
+    obstacle_ref: np.ndarray
+    obstacle_up: np.ndarray
 
 
 def upsample(field, factor):
@@ -62,22 +70,18 @@ def run_grid_convergence_study(case_class, resolutions, Re, tau_lbm=0.6, tol=1e-
 
         # Each field carries its OWN geometry: the coarse run's staircase is
         # blockier than the reference's, and that is part of the error being
-        # measured. The difference panel defaults to the union of the two,
-        # which is exactly ~fluid_mask — the cells the L2 norm above is
-        # taken over, so figure and number describe the same region.
-        plot_field_comparison(
-                u_ref_norm, u_up_norm,
-                save_path=f"results/plots/{case_class.__name__}/diff_{case_class.__name__}_{max_r}_vs_{r}_Re{int(Re)}_tol{tol}",
-                title=f"{case_class.__name__}: Ny={max_r} vs Ny={r} (L2={L2_error:.3e})",
-                obstacle_ref=ltc_reference.obstacle,
-                obstacle_coarse=obstacle_up,
-            )
-        
+        # measured. Their union is exactly ~fluid_mask — the cells the L2
+        # norm above is taken over — so a difference panel masked with it
+        # describes the same region as the number.
         yield ConvergenceResult(
             Ny=r,
             L2_error=L2_error,
             iterations=ltc.it,
             runtime_seconds=runtime,
+            u_ref=u_ref_norm,
+            u_up=u_up_norm,
+            obstacle_ref=ltc_reference.obstacle,
+            obstacle_up=obstacle_up,
         )
 
     total_runtime = time.perf_counter() - study_start
