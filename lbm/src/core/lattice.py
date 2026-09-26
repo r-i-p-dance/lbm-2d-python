@@ -102,9 +102,9 @@ class BaseLattice:
                 f"(Currently Re={Re}, tau={self.tau_lbm}, u_max={u_max:.3f})")
 
 
-    def zou_he_pressure_west(self):
+    def zou_he_pressure_west(self, j_from, j_to):
         # Zou-He boundary condition at the west boundary (inlet)
-        nb_zou_he_pressure_west(self.f, self.ux, self.uy, self.rho, self.rho_in)
+        nb_zou_he_pressure_west(self.f, self.ux, self.uy, self.rho, self.rho_in, j_from, j_to)
             
     def zou_he_pressure_east(self, j_from, j_to):
         # Zou-He boundary condition at the east boundary (outlet)
