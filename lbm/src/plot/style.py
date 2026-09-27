@@ -42,7 +42,6 @@ PLOT_TITLE_PT  = 13
 AXIS_LABEL_PT  = 13
 TICK_LABEL_PT  = 13
 LEGEND_PT      = 13
-ANNOTATION_PT  = 13
 
 # Stroke weights in POINTS, absolute for the same reason.
 LINE_PT        = 1.4
@@ -110,13 +109,6 @@ plt.rcParams.update({
 })
 
 THEME = "dark"           # "dark" | "light"
-
-# Gap between panels, as a fraction of the panel's own size. One number for
-# every multi-panel figure in the project, so the optimization recorder and
-# the mesh-difference plots tile on the same rhythm. Figures whose panels are
-# square use it in both directions; figures with unequal rows derive their
-# vertical spacing from it so the gap comes out the same in inches.
-GUTTER = 0.2
 
 # ---------------------------------------------------------------- dark
 _DARK = dict(
@@ -277,24 +269,34 @@ SOLID = PANEL
 
 
 
-def poster_figure(w_modules, h_modules):
+# Outer margin, in modules, per destination. On the poster the page sits in
+# the layout's own one-leading gutter, so one is enough and anything more
+# double-counts it. A README figure has nothing around it but the page, so it
+# carries its own breathing room. Every figure builder in the project takes a
+# `mode` and looks the margin up here, so the two destinations stay
+# consistent across the recorder, the fields and the line plots.
+MARGINS = {"poster": 1, "readme": 2}
+
+
+def poster_figure(w_modules, h_modules, mode="poster"):
     """A figure whose AXES RECTANGLE is exactly w x h grid modules.
 
     The usual matplotlib flow is backwards for a poster: you give a figure
     size, the layout engine decides how much of it the axes gets, and the
     plot rectangle ends up whatever is left over after the labels. Here the
     caller sizes the rectangle that has to land on the grid, and the figure
-    is derived from it — one module of margin on every side, which is where
-    the title and the tick labels live.
+    is derived from it — a margin of MARGINS[mode] modules on every side,
+    which is where the title and the tick labels live.
 
-    So the saved file is (w + 2) x (h + 2) modules. Align the inner
+    So the saved file is (w + 2m) x (h + 2m) modules. Align the inner
     rectangle to a grid cell in InDesign and the margins fall into the
     poster's own gutters.
     """
+    m = MARGINS[mode]
     unit = BASELINE_MM / MM_PER_IN                   # one module, in inches
-    total_w, total_h = w_modules + 2, h_modules + 2
+    total_w, total_h = w_modules + 2 * m, h_modules + 2 * m
     fig = plt.figure(figsize=(total_w * unit, total_h * unit))
-    ax = fig.add_axes([1 / total_w, 1 / total_h,
+    ax = fig.add_axes([m / total_w, m / total_h,
                        w_modules / total_w, h_modules / total_h])
     return fig, ax
 
@@ -420,14 +422,6 @@ def apply_figure_style(fig, axes, image_axes=()):
         ax.xaxis.label.set_color(MUTED)
         ax.yaxis.label.set_color(MUTED)
         ax.grid(color=RULE, alpha=GRID_ALPHA, linewidth=GRID_PT)
-
-
-def style_colorbar(cb):
-    """Match a colorbar's frame and ticks to the figure rules."""
-    cb.outline.set_edgecolor(RULE)
-    cb.outline.set_linewidth(0.8)
-    cb.ax.tick_params(colors=MUTED, labelcolor=MUTED, labelsize=7)
-    cb.ax.yaxis.get_offset_text().set_color(MUTED)
 
 
 def style_legend(leg):

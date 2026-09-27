@@ -1,10 +1,9 @@
-"""Two resolutions and their difference, in either of two layouts.
+"""Two resolutions and their difference.
 
 draw_field paints one field into an axes and knows nothing about figures or
 files. Two builders wrap it: plot_comparison_poster writes each panel as its
-own PDF on the poster grid, plot_comparison_combined stacks all three in one
-figure for the README. Pick the builder at the call site — neither has to be
-edited to get the other.
+own PDF, for placing on the poster by hand; plot_comparison_combined puts all
+three in one figure, for a README. Both land on the module grid.
 """
 
 import matplotlib.pyplot as plt
@@ -13,10 +12,9 @@ import numpy as np
 
 from lbm.src.plot import style
 
-# Panel order, fixed. Names are file suffixes; titles are for the README
-# layout, which is the only one that labels its panels.
+# Panel order, fixed. These are the file suffixes the poster builder writes;
+# the combined layout titles its panels from the resolutions instead.
 NAMES = ("reference", "coarse", "difference")
-TITLES = ("reference", "coarse (upsampled)", "absolute difference")
 
 
 def draw_field(ax, data, obstacle, cmap, vmax, gamma):
@@ -64,7 +62,8 @@ def _panels(ref, coarse, obstacle_ref, obstacle_coarse, cmap):
 
 
 def plot_comparison_poster(ref, coarse, obstacle_ref, obstacle_coarse, stem,
-                           modules, field=style.FIELD_VELOCITY):
+                           modules, field=style.FIELD_VELOCITY,
+                           mode="poster"):
     """One PDF per panel, each sized to the poster grid.
 
     `stem` is a path without extension; the files written are
@@ -82,7 +81,7 @@ def plot_comparison_poster(ref, coarse, obstacle_ref, obstacle_coarse, stem,
     cmap, gamma = field
     for name, (data, obstacle, panel_cmap, vmax) in zip(
             NAMES, _panels(ref, coarse, obstacle_ref, obstacle_coarse, cmap)):
-        fig, ax = style.poster_figure(*modules)
+        fig, ax = style.poster_figure(*modules, mode=mode)
         draw_field(ax, data, obstacle, panel_cmap, vmax, gamma)
         # imshow sets aspect "equal", which would letterbox the image inside
         # the rectangle and leave dead space where the grid expects field.
@@ -92,38 +91,74 @@ def plot_comparison_poster(ref, coarse, obstacle_ref, obstacle_coarse, stem,
         plt.close(fig)
 
 
-def plot_comparison_combined(ref, coarse, obstacle_ref, obstacle_coarse, path,
-                             title=None, field=style.FIELD_VELOCITY):
-    """All three panels stacked in one figure, for the README.
+def _cells(square, w, h, m):
+    """Where the three panels sit, in modules from the bottom-left.
 
-    imshow keeps the data's aspect, so a panel's height follows from its
-    width. Deriving the figure height from that rather than fixing it leaves
-    no dead band above and below each panel — the same reasoning the
-    optimization recorder uses to make its panels tile exactly.
+    One module between panels in both arrangements; `m` to every edge.
+    `w, h` is the DIFFERENCE panel — the one the figure is really about, `m`
+    the outer margin — and the layout follows from the domain's shape:
+
+      pyramid   a square domain. Three of those in a column is a tall ribbon,
+                so the two resolutions go small and side by side above the
+                difference. They are (w - 1) / 2 square, so the pair plus the
+                gap between them spans the difference exactly — the relation
+                the vertical recorder uses. w must be ODD.
+
+      stacked   anything wider. These channels are 5:1; side by side they
+                would be unreadable, so a column is the only arrangement that
+                works, and all three stay the same size.
+    """
+    if square:
+        s = (w - 1) // 2
+        return ([(m, m + h + 1, s, s), (m + s + 1, m + h + 1, s, s),
+                 (m, m, w, h)],
+                (w + 2 * m, h + s + 1 + 2 * m))
+    return ([(m, m + 2 * (h + 1), w, h), (m, m + h + 1, w, h), (m, m, w, h)],
+            (w + 2 * m, 3 * h + 2 + 2 * m))
+
+
+def plot_comparison_combined(ref, coarse, obstacle_ref, obstacle_coarse, path,
+                             modules, resolutions, note=None,
+                             field=style.FIELD_VELOCITY, mode="poster"):
+    """All three panels in one figure on the module grid, for a README.
+
+    `modules` sizes the DIFFERENCE panel, in the domain's own aspect; the rest
+    of the layout follows from it — see _cells. The arrangement is read off
+    the domain rather than passed in, because it only ever restates the shape
+    of the data: square fields get the pyramid, wider ones the column.
+
+    `resolutions` is (reference Ny, coarse Ny) and names the two fields, so
+    the figure says which grids it is comparing without the reader going to
+    the filename for it.
+
+    `note` is appended to the difference panel's title, which is where a
+    study's number belongs — it is the difference that the L2 error or the
+    agreement percentage describes.
     """
     cmap, gamma = field
     nx, ny = ref.shape
+    cells, (total_w, total_h) = _cells(nx == ny, *modules,
+                                       style.MARGINS[mode])
+    ny_ref, ny_coarse = resolutions
+    titles = [rf"reference, $N_y$ = {ny_ref}",
+              rf"coarse, $N_y$ = {ny_coarse}",
+              "absolute difference" + (f", {note}" if note else "")]
 
-    LEFT, RIGHT, TOP, BOTTOM = 0.02, 0.98, 0.93, 0.02
-    fig_w = 6 * nx / ny
-    panel_w = (RIGHT - LEFT) * fig_w
-    panel_h = panel_w * ny / nx
-    fig_h = panel_h * (3 + 2 * style.GUTTER) / (TOP - BOTTOM)
+    unit = style.BASELINE_MM / style.MM_PER_IN
+    fig = plt.figure(figsize=(total_w * unit, total_h * unit))
 
-    fig, axes = plt.subplots(3, 1, figsize=(fig_w, fig_h),
-                             gridspec_kw={"hspace": style.GUTTER,
-                                          "left": LEFT, "right": RIGHT,
-                                          "top": TOP, "bottom": BOTTOM})
-
-    for ax, subtitle, (data, obstacle, panel_cmap, vmax) in zip(
-            axes, TITLES,
+    axes = []
+    for (x, y, w, h), title, (data, obstacle, panel_cmap, vmax) in zip(
+            cells, titles,
             _panels(ref, coarse, obstacle_ref, obstacle_coarse, cmap)):
+        ax = fig.add_axes([x / total_w, y / total_h, w / total_w, h / total_h])
         draw_field(ax, data, obstacle, panel_cmap, vmax, gamma)
-        ax.set_title(subtitle)
+        # imshow sets aspect "equal", which would letterbox the image inside
+        # the rectangle and leave dead space where the grid expects field.
+        ax.set_aspect("auto")
+        ax.set_title(title)
+        axes.append(ax)
 
-    if title:
-        fig.suptitle(title, color=style.TEXT)
-
-    style.apply_figure_style(fig, list(axes), image_axes=tuple(axes))
-    style.save(fig, path, dpi=300)
+    style.apply_figure_style(fig, axes, image_axes=axes)
+    style.save_exact(fig, path)
     plt.close(fig)

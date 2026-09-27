@@ -7,7 +7,7 @@ from lbm.src.plot import style
 
 
 def plot_convergence(Ny_values, L2_errors, save_path, title=None,
-                     modules=(11, 7)):
+                     modules=(11, 7), mode="poster"):
     """Log-log grid convergence with a fitted rate, sized to the poster grid.
 
     `modules` is the size of the PLOT RECTANGLE in grid units; the saved
@@ -31,7 +31,7 @@ def plot_convergence(Ny_values, L2_errors, save_path, title=None,
     Ny_values = np.asarray(Ny_values, dtype=float)
     L2_errors = np.asarray(L2_errors, dtype=float)
 
-    fig, ax = style.poster_figure(*modules)
+    fig, ax = style.poster_figure(*modules, mode=mode)
 
     slope, intercept = np.polyfit(np.log(Ny_values), np.log(L2_errors), 1)
     fitted = np.exp(intercept) * Ny_values**slope

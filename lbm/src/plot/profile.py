@@ -34,7 +34,7 @@ def _finish(fig, ax, title, save_path):
 
 
 def plot_profile_comparison(u_numerical, u_analytical, Ny, save_path,
-                            title=None, modules=(11, 7)):
+                            title=None, modules=(11, 7), mode="poster"):
     """Numerical velocity profile against the analytical one.
 
     Cyan is the LBM result, amber the analytical profile it is measured
@@ -45,7 +45,7 @@ def plot_profile_comparison(u_numerical, u_analytical, Ny, save_path,
     title says what the axes are.
     """
     y = np.arange(1, Ny - 1)
-    fig, ax = style.poster_figure(*modules)
+    fig, ax = style.poster_figure(*modules, mode=mode)
 
     colour, linestyle = style.S_EXACT
     ax.plot(y, u_analytical, color=colour, ls=linestyle, label="exact")
@@ -59,7 +59,7 @@ def plot_profile_comparison(u_numerical, u_analytical, Ny, save_path,
 
 
 def plot_profile_residual(u_numerical, u_analytical, Ny, save_path,
-                          title=None, modules=(11, 7)):
+                          title=None, modules=(11, 7), mode="poster"):
     """Numerical minus analytical, as its own poster figure.
 
     Magenta because the residual is neither of the two series it is drawn
@@ -67,7 +67,7 @@ def plot_profile_residual(u_numerical, u_analytical, Ny, save_path,
     the poster — or left off it.
     """
     y = np.arange(1, Ny - 1)
-    fig, ax = style.poster_figure(*modules)
+    fig, ax = style.poster_figure(*modules, mode=mode)
 
     residual = u_numerical - u_analytical
     colour, linestyle = style.S_RESID
