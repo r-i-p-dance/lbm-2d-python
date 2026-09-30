@@ -117,8 +117,9 @@ def _cells(square, w, h, m):
             (w + 2 * m, 3 * h + 2 + 2 * m))
 
 
-def plot_comparison_combined(ref, coarse, obstacle_ref, obstacle_coarse, path,
-                             modules, resolutions, note=None,
+def plot_comparison_combined(ref, coarse, obstacle_ref,
+                             obstacle_coarse, path,
+                             modules, ny_coarse, note=None,
                              field=style.FIELD_VELOCITY, mode="poster"):
     """All three panels in one figure on the module grid, for a README.
 
@@ -127,9 +128,11 @@ def plot_comparison_combined(ref, coarse, obstacle_ref, obstacle_coarse, path,
     the domain rather than passed in, because it only ever restates the shape
     of the data: square fields get the pyramid, wider ones the column.
 
-    `resolutions` is (reference Ny, coarse Ny) and names the two fields, so
-    the figure says which grids it is comparing without the reader going to
-    the filename for it.
+    `ny_coarse` names the coarse grid in the titles, so the figure says what
+    it is comparing without the reader going to the filename for it. Only the
+    coarse one is asked for: `coarse` arrives already upsampled onto the
+    reference grid — that is what makes the subtraction possible — so its own
+    resolution is not in the array any more, while the reference's is.
 
     `note` is appended to the difference panel's title, which is where a
     study's number belongs — it is the difference that the L2 error or the
@@ -139,9 +142,8 @@ def plot_comparison_combined(ref, coarse, obstacle_ref, obstacle_coarse, path,
     nx, ny = ref.shape
     cells, (total_w, total_h) = _cells(nx == ny, *modules,
                                        style.MARGINS[mode])
-    ny_ref, ny_coarse = resolutions
-    titles = [rf"reference, $N_y$ = {ny_ref}",
-              rf"coarse, $N_y$ = {ny_coarse}",
+    titles = [rf"coarse, $N_y$ = {ny_coarse}",
+              rf"reference, $N_y$ = {ny}",
               "absolute difference" + (f", {note}" if note else "")]
 
     unit = style.BASELINE_MM / style.MM_PER_IN
@@ -150,7 +152,7 @@ def plot_comparison_combined(ref, coarse, obstacle_ref, obstacle_coarse, path,
     axes = []
     for (x, y, w, h), title, (data, obstacle, panel_cmap, vmax) in zip(
             cells, titles,
-            _panels(ref, coarse, obstacle_ref, obstacle_coarse, cmap)):
+            _panels(coarse, ref, obstacle_ref, obstacle_coarse, cmap)):
         ax = fig.add_axes([x / total_w, y / total_h, w / total_w, h / total_h])
         draw_field(ax, data, obstacle, panel_cmap, vmax, gamma)
         # imshow sets aspect "equal", which would letterbox the image inside
