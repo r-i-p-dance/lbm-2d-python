@@ -37,6 +37,6 @@ results/plots/**/*.pdf
 !results/animations/TwoRectangles/anim_Ny64_TwoRectangles_Re1.gif
 !results/plots/TwoRectangles/TwoRectangles_convstudy_readme.png
 !results/animations/BackwardStep/anim_Ny64_BackwardStep_Re1.gif
-!results/plots/BackwardStep/backwardstep_convstudy_readme.png
+!results/plots/BackwardStep/backward_convstudy_readme.png
 !results/animations/Cylinder/anim_Ny64_Cylinder_Re1.gif
 !results/plots/Cylinder/cylinder_convstudy_readme.png

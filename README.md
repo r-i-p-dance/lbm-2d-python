@@ -71,7 +71,7 @@ The rate falls to −1.0. Two errors compete: the bulk flow is second-order accu
 </p>
 
 <p align="center">
-  <img src="results/plots/BackwardStep/backwardstep_convstudy_readme.png" width="100%"/>
+  <img src="results/plots/BackwardStep/backward_convstudy_readme.png" width="100%"/>
 </p>
 
 ## 2.3 Cylinder
